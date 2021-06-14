@@ -1,16 +1,25 @@
 # Clever ISA
 
+## License
+
+Copyright (c)  2021  Connor Horman.
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3
+or any later version published by the Free Software Foundation;
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+A copy of the license is included in the repository, under the file entitled LICENSE. Otherwise, you may find a copy at <https://www.gnu.org/licenses/fdl-1.3.en.html>.
+
 
 ## Registers
 
 | r   | Register Name | Availability   |                                  Notes                                  |
 | --- | ------------- | -------------- |:-----------------------------------------------------------------------:|
 | 0   | r0/racc       | General        |                                                                         |
-| 1   | r1/rcnt       | General        |                     Counter for block instrunctions                     |
-| 2   | r2            | General        |                                                                         |
-| 3   | r3            | General        |                                                                         |
-| 4   | r4/rsrc       | General        |             Source Pointer Register for block instructions.             |
-| 5   | r5/rdst       | General        |           Destination Pointer Register for block instructions           |
+| 1   | r1/rsrc       | General        |                     Counter for block instrunctions                     |
+| 2   | r2/rdst        | General        |                                                                         |
+| 3   | r3/rcnt       | General        |                                                                         |
+| 4   | r4            | General        |             Source Pointer Register for block instructions.             |
+| 5   | r5            | General        |           Destination Pointer Register for block instructions           |
 | 6   | r6/fbase      | General        |                        Stack Frame Base Address                         |
 | 7   | r7/sptr       | General        |                    Stack Pointer/Frame Head Address                     |
 | 8   | r8            | General        |                                                                         |
@@ -91,7 +100,6 @@ CPU Extension Availability flags (cpuex2)
 | 0   |         Is NAME (V)         |            Always set to 1.            |
 | 2-4 | Physical Address Size (PAS) | The size of system physical addresses. |
 | 5-7 | Virtual Address Size (VAS)  |     The size of system addresses.      |
-| 8   |      Decimal FP (DFP)       |    Processor support for Decimal FP    |
 
 Virtual Address Size, as determined by cpuex2.VAS and cr0.PTL is assigned as follows: 0=32-bit, 1=40-bit, 2=48-bit, 3=56-bit, 4=64-bit.
 
@@ -367,16 +375,14 @@ Instructions:
 Opcodes: 0x020-0x027
 Operands: 2
 
-h: For opcodes 0x020-0x026 `[00 0f]`where if `f` is set `flags` is not modified. For opcode 0x027 `[00 df]` where if `f` is set, `flags` is not modified, and `d` is set if the first operand is in decimal format, and clear if the second is.
+h: For opcodes 0x020-0x021 `[00 0f]`where if `f` is set `flags` is not modified.
 
-Operand Constraints: For opcode 0x020 and 0x021, at least one operand shall be a register. For opcode 0x022-0x023, the destination register shall be a floating-point register. For opcodes 0x024-0x025, the source register shall be a floating-point register. For opcodes 0x026-0x027, at least one operand shall be a floating-point register, and neither operand shall be a direct register other than a floating-point register.
+Operand Constraints: For opcode 0x020 and 0x021, at least one operand shall be a register. 
 
 Flags: `M` and `Z` are set according to the result, unless `f` is set in `h`.
 
 Exceptions:
 - UND, if a operand constraint is violated
-- For opcodes 0x022-0x027, UND, if cr0.FPEN=0.
-- For opcodes 0x027, UND, if cpuex2.DFP=0
 - UND, if any destination operand is flags or ip
 - PROT, if a supervisor register is an operand, and `flags.XM=1`.
 - UND, if a reserved register is an operand.
@@ -391,19 +397,7 @@ Exceptions:
 Instructions:
 - 0x020 (movsx): Moves a signed integer operand from the second operand, to the first. If the second operand is smaller than the first, the highest bit is copied to each higher bit in the first opernd.
 - 0x021 (bswap): Moves the second operand into the first, swapping the order of the bytes stored. 
-- 0x022 (movsif): Moves a signed integer value from the second operand into the first, converting it into a floating-point value.
-- 0x023 (movxf): Moves a fixed-point value from the second operand into the first, converting it into a fixed-point value.
-- 0x024 (movfsi): Moves a floating point value from the second operand into the first, truncating it into a signed integer value.
-- 0x024 (movfx): Moves a floating point value from the second operand into the first, converting it into a fixed-point value
-- 0x026 (movf): Moves a floating-point value from the second operand into the first, converting it to the size of the destination operand.
-- 0x027 (movfd): Moves a decimal floating-point value from the second operand into the first, converting it to the size of the destination operand. 
 
-floating-point moves use the size of the floating-point operand to determine the format. 
-`size`=1 is not valid for any such operand. 
-For `movf` and `movfd`, the size of both operands are used, and the value is converted from the source format to the destination format.
-For all operations other than `movfd`, IEEE754 binary floating-point format is used for the size of the operand. For `movfd`, the corresponding decimal format is used.
-
-Fixed point operands (`movxf` and `movfx`) use the higher half of the value for the integer portion, and the lower half for fractional portion. 
 
 All memory accesses are performed atomically. Note that the entire operation is not required to be atomic.
 
