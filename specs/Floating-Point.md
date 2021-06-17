@@ -22,19 +22,22 @@ If a cpu reports conformance to these extensions by setting cpuex2.FP, then a su
 
 The following previously reserved registers are defined as part of this extension for the following uses:
 
-| r   | Register Name | Availability   |
-|----------|----------|----------------|
-| 24       | f0       | FP             |
-| 25       | f1       | FP             |
-| 26       | f2       | FP             |
-| 27       | f3       | FP             |
-| 28       | f4       | FP             |
-| 29       | f5       | FP             |
-| 30       | f6       | FP             |
-| 31       | f7       | FP             |
+| Number   | Register Name | Availability   |
+|----------|---------------|----------------|
+| 24       | f0            | FP             |
+| 25       | f1            | FP             |
+| 26       | f2            | FP             |
+| 27       | f3            | FP             |
+| 28       | f4            | FP             |
+| 29       | f5            | FP             |
+| 30       | f6            | FP             |
+| 31       | f7            | FP             |
 
-Registers listed with FP availability are floating-point registers, They may be accessed in any mode when cr0.FPEN=1. It is an error if any of the following instructions have an operand that is a floating-point register:
-- Opcodes 0x001-0x007
+Registers listed with FP availability are floating-point registers. They may be accessed in any mode when cr0.FPEN=1. 
+
+If Opcodes 0x001-0x007 have an operand that's a floating-point register, UND is raised.
+
+`mov`, `test`, `cmp`, `cmpxchg`, and `xchg` may all have floating-point register operands. If any of these instructions do, they operate on the value bitwise. In particular, `cmp` may be used to totally order floating-point values.
 
 
 ## Instructions
@@ -52,6 +55,7 @@ Flags: `M` and `Z` are set according to the result, unless `f` is set in `h`.
 
 Exceptions:
 - UND, if a operand constraint is violated
+- UND, if cr0.FPEN=0
 - UND, if any destination operand is flags or ip
 - PROT, if a supervisor register is an operand, and `flags.XM=1`.
 - UND, if a reserved register is an operand.

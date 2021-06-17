@@ -248,11 +248,10 @@ Instructions:
 If the destination operand of `mov` or `lea` is smaller than the result, the value stored is truncated. If the destination operand is larger than the result, the value stored is zero-extended to the destination size.
 All memory accesses are performed atomically, wrt. other memory accesses, and operations performed under a memory lock. 
 
-### Subroutines
+### Subroutines/Unconditional Jumps
 
-Opcodes: 0x7C0-0x7C5
-Operand: For opcodes 0xfc0 and 0xfc1, 1 ss immediate (not in Operand Form). 
-h: For opcodes 0xfc0 and 0xfc1, `[ss i0]`, where ss is `log2(size)-1` in bytes, and if `i` is set, the signed (2s compliment) value is added to `ip` to obtain the actual address. For opcode 0xfc4, `rrrr`, where `r` is the gpr (0<=r<16) that contains the branch target address. For all other opcodes, shall be 0.
+Opcodes: 0x7C0-0x7C5, 0x7C8-0x7c9
+
 
 
 Exceptions:
@@ -527,7 +526,7 @@ wcmpxchg exists to permit efficient implementations which can be made use of whe
 Opcodes: 0x700-0x73F and 0x780-0x78F
 
 Branch Instruction Encoding:
-`[1111 00ss cccc hhhh]`: `ss` is the log2(size)-1 of the signed branch offset, following the instruction. `hhhh` is a signed weight for the branch, with -8 being the most likely not to be taken, and 7 being the most likely to be taken (0 indicates roughly even probability). `cccc` is the encoding of the condition code for the branch.
+`[0111 00ss cccc hhhh]`: `ss` is the log2(size)-1 of the signed branch offset, following the instruction. `hhhh` is a signed weight for the branch, with -8 being the most likely not to be taken, and 7 being the most likely to be taken (0 indicates roughly even probability). `cccc` is the encoding of the condition code for the branch.
 
 `[1111 1000 cccc rrrr]`: Indirect branch to a (general purpose) register `rrrr`. 
 
@@ -542,14 +541,14 @@ Exceptions:
 - XA, if the desination address is not 2-byte aligned
 
 Instructions:
-- Opcodes 0xF00-0xF3F, if the condition indicated by *c* is satisified, branches to `ip+imm`
-- Opcodes 0xF80-0xF8F, if the condition indicated by *c* is satisfied, branches to the address stored in `r`.
+- Opcodes 0x700-0x73F, if the condition indicated by *c* is satisified, branches to `ip+imm`
+- Opcodes 0x780-0x78F, if the condition indicated by *c* is satisfied, branches to the address stored in `r`.
 
 #### Condition Code Encoding
 
 cc value | Name       | Condition
 ---------|------------|---------------
- 0       | Always     | Any
+ 0       | Parity     | flags.P=1
  1       | Carry      | flags.C=1
  2       | Overflow   | flags.V=1
  3       | Zero/Eq    | flags.Z=1
@@ -564,7 +563,7 @@ cc value | Name       | Condition
  12      | Not Zero/Eq| flags.Z=0
  13      | No Overflow| flags.V=0
  14      | No Carry   | flags.C=0
- 15      | Never      | None
+ 15      | No Parity  | flags.P=0
 
  
 ## Supervisor Instructions
@@ -604,7 +603,10 @@ Opcode 0xFC9 (reti) performs the following actions:
 ### Machine Specific Instructions
 
 Opcodes: 0xfe0-0xfff
+<<<<<<< HEAD
 
+=======
+>>>>>>> 845cfe1 (Do some spec work)
 Operands: Machine Specific
 
 h: Machine Specific
@@ -614,7 +616,7 @@ Exceptions:
 - PROT, if flags.XM=1
 - Any other Exception documented by the machine
 
-Instructions 0x7e0-0x7ff are reserved for machine dependent behaviour and will not be assigned further meaning in future ISA versions. Refer to machine specific documentation.
+Instructions 0xfe0-0xfff are reserved for machine dependent behaviour and will not be assigned further meaning in future ISA versions. Refer to machine specific documentation.
 
 ### Halt
 
@@ -668,10 +670,48 @@ Instructions:
 
 Both opcodes 0x806 and 0x807 may be modified by opcodes 0x028 and 0x029 (repc and repi).
 
+### Mass Register Storage
+
+Opcodes: 0x808-0x809
+
+Operands: 1
+
+h: Reserved. Shall be 0
+
+Operand Constraints: The operand shall be an indirect register, or a memory reference
+
+Exceptions:
+- UND, if any operand constraint is violated
+- For opcode 0x809, PROT, if any reserved register is restored with a value other than `0`. 
+- PROT, if flags.XM=1
+
+Instructions:
+- 0x808 (storegf): Stores the value of each register to the memory address specified by the operand. The value of `ip` stored is the address immediately following this instruction
+- 0x809 (rstregf): Restores the value of each non-reserved, non-cpuinfo register from the memory address specified by the operand
+
 ## Multiple CPUs
 
-A *NAME* Processor may contain more than one CPU. At startup, the CPU with id 0 is initialized. 
+A Clever Processor may contain more than one CPU. At startup, CPU 0 is initialized. 
 
+The number of CPUs present on a machine can be determined by reading 2 bytes (ss=1) from I/O device address 0xfe80. CPUs <128 can be initialized by the following procedure. The procedure for other CPUs is machine specific:
+The register load pointer for CPU *n* is present at I/O Device `0xff00+n`, and is an 8 byte physical address pointing to 512 bytes corresponding to the initialization state of the processes registers. Reserved Registers and cpuinfo registers MUST Be `0` or UND will be raised when the CPU is enabled. The CPU-Enable Control Word, described below, for CPU *n* is present at I/O Device `0xff80+n`. The behaviour of writing to either address for a CPU that is active, is undefined, and the behaviour of writing to the Register Load Pointer for an enabled CPU is undefined.
+
+The CPU Enable Control Word has the following structure:
+
+| Bits     | Name         | Description                                           |
+|----------|--------------|-------------------------------------------------------|
+| 0        | Enable       | Whether or not the CPU is enabled                     |
+| 1        | Active       | Whether or not the CPU is actively executing code     |   
+| 2-7      | Exception    | The interrupt or execution number to be serviced (0 indicates no exception) |
+| 56-63    | Machine Specific Use| Misc values/flags that, when non-zero, has machine-specific meaning| 
+
+All other bits are reserved and should be zero. The behaviour of setting an invalid CPU Enable Control Word is undefined.
+
+Notes: 
+- Exception does not report when a CPU is servicing ABRT, nor permits a different CPU from raising it. A value of `0` indicates the CPU is not servicing any interrupt, or that it is currently servicing ABRT. 
+- A CPU that is disabled is also inactive, and all other bits (other than machine specific bits) are unused, including reserved bits. Thus, a disabled CPU can have it's CPU Enable Control Word used for Supervisor-specific purposes.
+- An inactive, but enabled, CPU can still service interrupts (and will become active when doing so), but will not service exceptions written into the Exception field until reactivated. 
+- Wehther or not the status of an active CPU is updated is not specified. 
 
 ## Interrupts
 
@@ -733,7 +773,7 @@ During initialization, all registers have undefined values, except:
 - cpuidhi, cpuidlo, cpuex2, cpuex3, cpuex4, cpuex5, cpuex6, and mscpuex, which shall have machine-specific values consistent with the requirements of this document.
 - Machine-specific msrs, which shall have machine-specific values or undefined values.
 
-The memory at physical addreses 0x0000 to 0xffff shall be loaded in a machine-specific manner, all other memory addressess shall be 0. 
+The memory at physical addreses 0x0000 through 0xffff shall be loaded in a machine-specific manner, all other memory addressess shall be 0. 
 
 ## Address Space Size
 
