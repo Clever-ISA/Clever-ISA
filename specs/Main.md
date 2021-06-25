@@ -603,8 +603,10 @@ Opcode 0xFC9 (reti) performs the following actions:
 
 ### Machine Specific Instructions
 
-Opcodes: 0x7e0-0x7ff
+Opcodes: 0xfe0-0xfff
+
 Operands: Machine Specific
+
 h: Machine Specific
 
 Exceptions:
@@ -823,5 +825,6 @@ The following changes are reserved to machine vendors:
 - Uses of registers 56 through 62.
 - Meanings of bits in mscpuex
 - Contents of all cpuinfo registers
-- Availability and behaviour of instructions 0x7e0-0x7ff. 
+- Availability and behaviour of instructions 0xfe0-0xfff. 
+- The timing, latency, and throughput of any instructions
 
