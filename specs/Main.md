@@ -250,7 +250,7 @@ All memory accesses are performed atomically, wrt. other memory accesses, and op
 
 ### Subroutines
 
-Opcodes: 0xFC0-0xFC5
+Opcodes: 0x7C0-0x7C5
 Operand: For opcodes 0xfc0 and 0xfc1, 1 ss immediate (not in Operand Form). 
 h: For opcodes 0xfc0 and 0xfc1, `[ss i0]`, where ss is `log2(size)-1` in bytes, and if `i` is set, the signed (2s compliment) value is added to `ip` to obtain the actual address. For opcode 0xfc4, `rrrr`, where `r` is the gpr (0<=r<16) that contains the branch target address. For all other opcodes, shall be 0.
 
@@ -278,11 +278,11 @@ Instructions:
 
 ### Supervisor Calls
 
-Opcodes: 0xfc6 (scall), 0xfc7 (int)
+Opcodes: 0x7c6 (scall), 0x7c7 (int)
 
 Operands: None
 
-h: For opcode 0xfc6, Shall be 0. For opcode 0xfc7, inum-16. 
+h: For opcode 0x7c6, Shall be 0. For opcode 0x7c7, inum-16. 
 
 Exceptions:
 - UND, if scdp is 0
@@ -294,7 +294,7 @@ Exceptions:
 - PF, if paging is disable, and a memory operand accesses an out of range physical address
 - XA, if the desination address is not 2-byte aligned.
 
-Opcode 0xfc6 performs the following operations, ignoring flags.XM and register protection:
+Opcode 0x7c6 performs the following operations, ignoring flags.XM and register protection:
 - The value `sp` is copied into a temporary location, then `sp` is loaded from `scsp` if that value is nonzero
 - If `scsc.FRET=1`, the value copied from `sp` is stored to `r14`, otherwise it is pushed to the stack.
 - If `scsc.FRET=1`, the return address is stored in `r15`, otherwise it is pushed to the stack.
@@ -303,7 +303,7 @@ Opcode 0xfc6 performs the following operations, ignoring flags.XM and register p
 - `ip` is loaded from `scdp`
 - Control Resumes from the new value of `ip`.
 
-Opcode 0xfc7 performs the following operantions, ignoring flags.XM and register protection:
+Opcode 0x7c7 performs the following operantions, ignoring flags.XM and register protection:
 - If `itab[inum].flags.PX` is clear, and `flags.XM=1`, then PROT is raised
 - Otherwise, the value `sp` is copied into a temporary location, then `sp` is loaded from `itab[inum].sp`
 - The copied value of `sp` is pushed onto the stack
@@ -524,7 +524,7 @@ wcmpxchg exists to permit efficient implementations which can be made use of whe
 
 ### Branches
 
-Opcodes: 0xF00-0xF3F and 0xF80-0xF8F
+Opcodes: 0x700-0x73F and 0x780-0x78F
 
 Branch Instruction Encoding:
 `[1111 00ss cccc hhhh]`: `ss` is the log2(size)-1 of the signed branch offset, following the instruction. `hhhh` is a signed weight for the branch, with -8 being the most likely not to be taken, and 7 being the most likely to be taken (0 indicates roughly even probability). `cccc` is the encoding of the condition code for the branch.
