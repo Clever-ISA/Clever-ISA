@@ -250,8 +250,9 @@ All memory accesses are performed atomically, wrt. other memory accesses, and op
 
 ### Subroutines/Unconditional Jumps
 
-Opcodes: 0x7C0-0x7C5, 0x7C8-0x7c9
-
+Opcodes: 0x7C0-0x7C5, 0x7c8-0x7c9
+Operand: For opcodes 0x7c0, 0x7c1, and 0x7c8, 1 ss immediate (not in Operand Form). 
+h: For opcodes 0x7c0, 0x7c1, and 0x7c8, `[ss i0]`, where ss is `log2(size)-1` in bytes, and if `i` is set, the signed (2s compliment) value is added to `ip` to obtain the actual address. For opcode 0x7c4, and 0x7c9, `rrrr`, where `r` is the gpr (0<=r<16) that contains the branch target address. For all other opcodes, shall be 0.
 
 
 Exceptions:
@@ -268,12 +269,14 @@ Exceptions:
 - XA, if the jump address is not 2-byte aligned
 
 Instructions:
-- 0xfc0 (call): Performs a subroutine call to the immediate operand, pushing the return address to the stack. If `i` is set, the current value of `ip` is added to the signed immediate.
-- 0xfc1 (fcall): Performs a "fast" subroutine call to the immediate operand, storing the return address in `r15`. If `i` is set, the current value of `ip` is added to the signed immediate.
-- 0xfc2 (ret): Returns from a subroutine by popping the return address from the stack.
-- 0xfc3 (fret): Performs a "fast" subroutine return by restoring the return address in `r15`. 
-- 0xfc4 (icall): Performs an indirect call to address stored in the given register, pushing the return address to the stack.
-- 0xfc5 (ifcall): Performs a "fast" indirect call to the address stored in `r14`, storing the return value in `r15`.
+- 0x7c0 (call): Performs a subroutine call to the immediate operand, pushing the return address to the stack. If `i` is set, the current value of `ip` is added to the signed immediate.
+- 0x7c1 (fcall): Performs a "fast" subroutine call to the immediate operand, storing the return address in `r15`. If `i` is set, the current value of `ip` is added to the signed immediate.
+- 0x7c2 (ret): Returns from a subroutine by popping the return address from the stack.
+- 0x7c3 (fret): Performs a "fast" subroutine return by restoring the return address in `r15`. 
+- 0x7c4 (icall): Performs an indirect call to address stored in the given register, pushing the return address to the stack.
+- 0x7c5 (ifcall): Performs a "fast" indirect call to the address stored in `r14`, storing the return value in `r15`.
+- 0x7c8 (jmp): Performs a jump to the immediate operand. If `i` is set, the current value of `ip` is added to the signed immediate
+- 0x7c9 (ijmp): Performs an indirect jmp to the address stored in the given register.
 
 ### Supervisor Calls
 
@@ -420,7 +423,7 @@ Flags: Opcodes 0x02a-0x02c set Z and M according to the value transfered. Opcode
 
 Instructions:
 - 0x028 (repbi): Shall be immediately followed by a block operation (opcodes 0x02a-0x02f). Repeats the following operation until the condition is satisfied
-- 0x029 (repbc): Shall be immediate followed by a block operation (opcodes 0x02a-0x02f). Repeats the following operation and decrements r1 until the condition is satisified, or r1 is 0.
+- 0x029 (repbc): Shall be immediately followed by a block operation (opcodes 0x02a-0x02f). Repeats the following operation and decrements r1 until the condition is satisified, or r1 is 0.
 - 0x02a (bcpy): Loads the value (according to `ss`) at the address in r4, and stores it to the address in r5, then adds `ss` to both r4 and r5.
 - 0x02b (bsto): Stores the value (according to `ss`) in r0 into the address in `r5`, then adds `ss` to `r5`.
 - 0x02c (bsca): Loads the value (according to `ss`) from the address in `r4` into `r0`.
@@ -664,11 +667,16 @@ h: `[00 ss]`, where `ss` is `lg(size)` of the transfer.
 Exceptions:
 - PROT, if flags.XM=1
 
+Flags: 0x806 Sets Z, M, and P based on the value read
+
 Instructions:
 - 0x806 (in): Reads `ss` bytes from the I/O Device at the address given in `r1` into `r0`.
 - 0x807 (out): Writes `ss` bytes from `r0` to the I/O Device at the address given in `r0`.
 
-Both opcodes 0x806 and 0x807 may be modified by opcodes 0x028 and 0x029 (repc and repi).
+Both opcodes 0x806 and 0x807 may be modified by opcodes 0x028 and 0x029 (repc and repi). If so, the operation is performed until the condition is satisifed.
+
+I/O Device Addresses are 64-bit values, which correspond to some identifier assigned to devices. The I/O Device Addresses from 0x0000-0xffff are reserved for use with this specification, future versions, and extensions thereof.
+All other device addresses have machine specific use
 
 ### Mass Register Storage
 
@@ -712,6 +720,10 @@ Notes:
 - A CPU that is disabled is also inactive, and all other bits (other than machine specific bits) are unused, including reserved bits. Thus, a disabled CPU can have it's CPU Enable Control Word used for Supervisor-specific purposes.
 - An inactive, but enabled, CPU can still service interrupts (and will become active when doing so), but will not service exceptions written into the Exception field until reactivated. 
 - Wehther or not the status of an active CPU is updated is not specified. 
+- Causing any register to be initialized with an invalid value (`ip` not aligned to `0`, invalid `flags`, `cr`, or `mscr` bits set) causes undefined behaviour when the CPU is enabled.
+- Storing an out-of-range physical address to the Register Load Pointer for any CPU causes undefined behaviour. 
+
+The extensions (cpuex2-6 and mscpuex) supported by each CPU need not be the same. A processor can, at any time, query an inactive CPU's (ID<128) CPUInfo by writing an 8-byte physical address to the I/O Device Address `0x7f00+n`. The value of each cpuinfo register (registers 40-47) that would be reported by that CPU will be stored consecutively to the indicated address. If any operation would exceeds the physical address space bounds, `PF` is raised. 
 
 ## Interrupts
 
