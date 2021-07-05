@@ -606,10 +606,6 @@ Opcode 0xFC9 (reti) performs the following actions:
 ### Machine Specific Instructions
 
 Opcodes: 0xfe0-0xfff
-<<<<<<< HEAD
-
-=======
->>>>>>> 845cfe1 (Do some spec work)
 Operands: Machine Specific
 
 h: Machine Specific
