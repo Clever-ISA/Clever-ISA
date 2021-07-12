@@ -126,6 +126,7 @@ Where:
 - yyyy is reserved and must be zero
 - rrrrrr is register value 0<=r<64
 
+When reading from a register operand, only the low order bytes indicated by `ss` are read. When writing to a register operand, the value is written only to the low order bytes indicated by `ss`, and all other bytes are zeroed. 
 
 ### Indirect 
 
