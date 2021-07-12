@@ -113,6 +113,10 @@ Physical Address Size, as determined by cpuex2.PAS is assigned as follows:  0=32
 [^4]: Tools that produce machine code for this architecture may rely on register 63 being reserved. 
 
 ## Operands
+
+Operands are encoded in clever as 2 bytes, in big endian (Most-significant Byte at the lowest address), using the 2 most significant bits as a control indiciator. 
+Not all bits of encoded operands are used. Any unused/reserved bits must be set to 0 or an undefined instruction exception is raised. These bits may be given meaning in future versions
+
 ### Register Operand
 
 `[00 yyyy ss xx rrrrrr]`
@@ -150,7 +154,11 @@ If `m` is set, the the immediate value is a memory reference.
 
 Immediate values of size 16 (ss=3) are reserved, and attempts to use them in an operand will unconditionally produce `UND`.
 
-## Encoding
+Long Immediate Values and values in memory are encoded in the Little-Endian byte Order (The least significant byte occurs at the lowest address). 
+
+## Instruction Encoding
+
+Instruction opcodes are encoded as 2 bytes, in big endian byte order. The most significant 12 bits of the instruction determine the opcode, and the least significant 4 bits encode instruction specific information, referred to in this document as `h`. Not all instructions make use of the `h` bits. If an instruction does not use a particular bit in the `h` field, it must be set to zero or an undefined instruction exception occurs. Such bits may be used in future revisions of this document, or extensions. 
 
 Opcode:
 `[oooooooooooo hhhh]`: `o` is the 12-bit opcode, and `hhhh` is used for instruction specific information.
