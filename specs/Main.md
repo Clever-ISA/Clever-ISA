@@ -120,7 +120,7 @@ Not all bits of encoded operands are used. Any unused/reserved bits must be set 
 ### Register Operand
 
 `[00 yyyy ss xx rrrrrr]`
-Where:
+
 - ss is the size control value (log2(size) bytes).
 - xx is reserved and must be zero
 - yyyy is reserved and must be zero
