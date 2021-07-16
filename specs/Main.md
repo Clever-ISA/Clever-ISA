@@ -145,13 +145,13 @@ An up to 12-bit immediate value can encoded directly into the operand. If `r` is
 
 ### Long Imm 
 
-`[11 m yy r ss yyyyyyyy]`
+`[11 m yy r ss yy zz yyyy]`
 
-An Immediate value, with a size given by ss (`log2(size)-1`).  If `r` is set, then the value of `ip` is added to the immediate value.
+An Immediate value, with a size given by ss (`log2(size)-1`).  If `r` is set, then the value of `ip` is added to the signed immediate value.
 
-`yy` and `yyyyyyyy` are all reserved and must be zero. The immediate value follows the operand control structure.
+`yy` and `yyyyyyyy` are all reserved and must be zero. The immediate value follows the operand control structure. 
 
-If `m` is set, the the immediate value is a memory reference.
+If `m` is set, the the immediate value is a memory reference, and the operand accesses the memory address given by the immediate value. `zz` is the size control (`log2(size)`) for the referent. If `m` is not set, `zz` is reserved and shall be zero.
 
 Immediate values of size 16 (ss=3) are reserved, and attempts to use them in an operand will unconditionally produce `UND`.
 
