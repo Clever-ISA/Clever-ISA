@@ -110,3 +110,48 @@ Return values with class INTEGER with size up to 8 are returned in `r0`. Unused 
 Return values with class MEMORY, or class INTEGER with size greater than 8 are returned as follows:
 - The caller shall place a pointer to well-algined memory to construct the return value into in `r0`.
 - The callee shall construct the return value into the pointer in `r0`, and shall return this pointer in `r0`.
+
+
+## Elf File
+
+### Header Fields
+
+An elf file that contains machine code for the Clever Architecture shall use `EICLASS64` and `EIDATA2LSB` in `e_ident`, and shall have an `e_machine` value of `EM_CLEVER`, which is `0x434C` (temporary, pending official registration and number from generic-abi). 
+
+`e_flags` shall be a bitfield of the following flags:
+
+|       flag        |  bits  |
+|-------------------|--------|
+| `EF_CLEVER_FLOAT` | 0x0001 |
+| `EF_CLEVER_VECTOR`| 0x0002 |
+
+A file that has `EF_CLEVER_FLOAT` set contains code suitable for execution on clever processors that support the Floating-Point extension. A file that has `EF_CLEVER_VECTOR` set contains code suitable for execution on clever processors that support the Vector extension. 
+
+### Relocations
+
+The following relocations are available to `ET_REL` ELF files for the Clever Architecture.
+
+|    Relocation     | Value | Description                      |
+|-------------------|-------|----------------------------------|
+| R_CLEVER_NONE     | 0     | Performs no Relocation           |
+| R_CLEVER_16       | 1     | Performs an unsigned 16-bit relocation against the symbol |
+| R_CLEVER_32       | 2     | Performs an unsigned 32-bit relocation against the symbol |
+| R_CLEVER_64       | 3     | Performs an signed 64-bit relocation against the symbol   |
+| R_CLEVER_16_PCREL | 5     | Performs a signed 16-bit pc-relative relocation against the symbol |
+| R_CLEVER_32_PCREL | 6     | Performs a signed 32-bit pc-relative relocation against the symbol |
+| R_CLEVER_64_PCREL | 7     | Performs a signed 64-bit pc-relative relocation against the symbol |
+| R_CLEVER_SIMM     | 8     | Performs an unsigned 12-bit relocation against the symbol, and produces a shortimm operand with the value |
+| R_CLEVER_SIMM_PCREL| 9   | Performs a signed 12-bit pc-relative relocation against the symbol and produces a shortimm operand with the value |
+| R_CLEVER_RELAX_LONG | 10 | Emits a relaxation hint for a longimm operand, allowing it to be reduced in size according to the value of the relocation. |
+| R_CLEVER_RELAX_LONG_PCREL | 11  | Emits a relaxation hint for a pc-relative longimm opernad, allowing it to be reduced in size according to the value of the relocation. |
+| R_CLEVER_RELAX_SHORT | 12 | Emits a relaxation hint for a longimm operand, allowing it to be converted to a shortimm operand if the value is in range |
+| R_CLEVER_RELAX_SHORT_PCREL | 13 | Emits a relaxation hint for a pc-relative longimm operand, allowing it to be converted to a shortimm operand if the value is in range |
+| R_CLEVER_GOT | 16 | Relocates against a symbol's GOT Entry Address |
+| R_CLEVER_GOT_PCREL | 17 | Relocates against a symbol's GOT Entry pcrelative address |
+| R_CLEVER_PLT | 18 | Relocates against a symbol's PLT Entry address |
+| R_CLEVER_PLT_PCREL | 19 | Relocates against a symbol's PLT Entry pcrelative address |
+| R_CLEVER_RELAX_GOT | 20 | Same as R_CLEVER_RELAX_LONG but against the symbol's GOT Entry Address |
+| R_CLEVER_RELAX_GOT_PCREL | 21 | Same as R_CLEVER_RELAX_LONG_PCREL, but against the symbol's GOT Entry Address |
+| R_CLEVER_RELAX_PLT | 22 | Same as R_CLEVER_RELAX_LONG, but against the symbol's PLT Entry address |
+| R_CLEVER_RELAX_PLT_PCREL | 23 | Same as R_CLEVER_RELAX_LONG_PCREL, but against the symbol's PLT Entry Address |
+| R_CLEVER_
