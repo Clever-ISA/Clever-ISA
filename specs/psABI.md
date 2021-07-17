@@ -29,12 +29,12 @@ The alignment of each primitive type (`char`, `signed char`, `short`, `int`, `lo
 ### Enumeration Base Type
 
 The Base/Underlying type for enums declared in C, and unscoped enums declared in C++ without a fixed underlying type, shall be `int`. 
-
+ 
 ### Type Aliases
 
 - `size_t` shall be an alias of type `unsigned long`. `ptrdiff_t` shall be an alias of type `long`.
 - `int8_t`, `int16_t`, `int32_t`, and `int64_t` shall be aliases of types `signed char`, `short`, `int`, and `long long` respectively. `uintN_t` shall be an alias of the unsigned version of the type aliased by `intN_t`
-- `int_leastN_t` and `int_fastN_t` shall both be alaises of the type aliased by `intN_t`. `uint_leastN_t` and `uint_fastN_t` shall both be aliases of the type aliased by `uintN_t`.
+- `int_leastN_t` and `int_fastN_t` shall both be aliases of the type aliased by `intN_t`. `uint_leastN_t` and `uint_fastN_t` shall both be aliases of the type aliased by `uintN_t`.
 - `uintptr_t` shall be an alias of type `unsigned long`, `intptr_t` shall be an alias of type `long`.
 
 
@@ -92,12 +92,12 @@ The classification of a union type is as follows:
 
 The first 4 parameters with class FLOAT are passed in registers, `f0`, `f1`, `f2`, and `f3`. If the type is 2, 4, or 8 bytes in size, then it shall be accessed with a size control corresponding to that size and the upper bits of the register are undefined. Remaining parameters with class FLOAT are treated as parameters with class INTEGER. 
 
-Paramaters with class INTEGER or remaining parameters with class FLOAT are modified as follows to be passed in.
+Parameters with class INTEGER or remaining parameters with class FLOAT are modified as follows to be passed in.
 - If the type is less than 16 bytes in size, it shall be zero-extended to the next power of two size if it is not already a power of two.
 - If the modified type is 16 bytes in size, it shall be split into a parameter pair of class INTEGER with size 8.
 - Otherwise, the parameter is treated as though it has class MEMORY.
 
-The first 8 modified parameters shall be passed in the registers `r2`, `r1`, `r3`, `r4`, `r5`, `r6`, `r7`, and `r9`. If the 8th parameter is the first paramater in a split parameter pair, it shall instead be as the last value on the stack. Remaining parameters are pushed to the stack from right to left. The any bits in the parameter that exceed the size of the type shall be zero.
+The first 8 modified parameters shall be passed in the registers `r2`, `r1`, `r3`, `r4`, `r5`, `r6`, `r7`, and `r9`. If the 8th parameter is the first parameter in a split parameter pair, it shall instead be as the last value on the stack. Remaining parameters are pushed to the stack from right to left. The any bits in the parameter that exceed the size of the type shall be zero.
 
 Parameters with class MEMORY, or parameters with class INTEGER or class FLOAT exceeding 16 bytes in size are replaced by a pointer to the value in some well-aligned memory. This memory shall not be read by the caller after the function returns (but may be written to and reused). The pointer is then substituted for the parameter and passed as normal.
 
@@ -108,7 +108,7 @@ Return values with class FLOAT with size 2, 4, or 8 are returned in `f0`. The va
 Return values with class INTEGER with size up to 8 are returned in `r0`. Unused bits shall be zero.
 
 Return values with class MEMORY, or class INTEGER with size greater than 8 are returned as follows:
-- The caller shall place a pointer to well-algined memory to construct the return value into in `r0`.
+- The caller shall place a pointer to well-aligned memory to construct the return value into in `r0`.
 - The callee shall construct the return value into the pointer in `r0`, and shall return this pointer in `r0`.
 
 
@@ -154,4 +154,3 @@ The following relocations are available to `ET_REL` ELF files for the Clever Arc
 | R_CLEVER_RELAX_GOT_PCREL | 21 | Same as R_CLEVER_RELAX_LONG_PCREL, but against the symbol's GOT Entry Address |
 | R_CLEVER_RELAX_PLT | 22 | Same as R_CLEVER_RELAX_LONG, but against the symbol's PLT Entry address |
 | R_CLEVER_RELAX_PLT_PCREL | 23 | Same as R_CLEVER_RELAX_LONG_PCREL, but against the symbol's PLT Entry Address |
-| R_CLEVER_
