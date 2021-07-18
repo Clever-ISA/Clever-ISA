@@ -2,7 +2,7 @@
 
 ## Required Extensions
 
-A CPU running code generated under this ABI shall support the floating-point extensions, unless the types, `_Float16`, `float`, `double`, `long double` are not used.
+A CPU running code generated under this ABI shall support the floating-point extensions, unless the types, `_Float16`/`__float16`, `float`, `double`, `long double` are not used.
 
 
 ## Type Layouts
