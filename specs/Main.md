@@ -109,12 +109,12 @@ Physical Address Size, as determined by cpuex2.PAS is assigned as follows:  0=32
 
 [^1]: Written by `call`, `ret`, `reti`, `scall`, `scret`, `int`, and `b`*`cc`*.
 [^2]: Except to the pop, reti, and scret instructions. flprotect masks writes from the pop instruction, other than bits 0-3, in Program Execution Mode
-[^3]: Machine Specific Control Registers may be unavailable and reserved in Supervisor mode, and their behaviour is not specified. Refer to documentation for the particular Processor ID. The author of this documentation does not endorse the content of such documentation. An implementation shall not make the registers available to program execution mode, unless permitted by the supervisor.
+[^3]: Machine Specific Control Registers may be unavailable and reserved in Supervisor mode, and their behavior is not specified. Refer to documentation for the particular Processor ID. The author of this documentation does not endorse the content of such documentation. An implementation shall not make the registers available to program execution mode, unless permitted by the supervisor.
 [^4]: Tools that produce machine code for this architecture may rely on register 63 being reserved. 
 
 ## Operands
 
-Operands are encoded in clever as 2 bytes, in big endian (Most-significant Byte at the lowest address), using the 2 most significant bits as a control indiciator. 
+Operands are encoded in clever as 2 bytes, in big endian (Most-significant Byte at the lowest address), using the 2 most significant bits as a control indicator. 
 Not all bits of encoded operands are used. Any unused/reserved bits must be set to 0 or an undefined instruction exception is raised. These bits may be given meaning in future versions
 
 ### Register Operand
@@ -210,7 +210,7 @@ Instructions:
 - 0x001 (add): Adds the value of the two operands
 - 0x002 (sub): Subtracts the value of the second operand from the first
 - 0x003 (and): Performs the bitwise and of the two operands
-- 0x004 (or):  Perfomrs the bitwise or of the two operands
+- 0x004 (or):  Performs the bitwise or of the two operands
 - 0x005 (xor): Performs the bitwise exclusive or of the two operands
 
 ### Multiplication and Division Instructions
@@ -303,7 +303,7 @@ Exceptions:
 - PROT, if the target address is out of range for the PTL mode.
 - PF, if a memory operand accesses an unavailable virtual memory address
 - PF, if paging is disable, and a memory operand accesses an out of range physical address
-- XA, if the desination address is not 2-byte aligned.
+- XA, if the destination address is not 2-byte aligned.
 
 Opcode 0x7c6 performs the following operations, ignoring flags.XM and register protection:
 - The value `sp` is copied into a temporary location, then `sp` is loaded from `scsp` if that value is nonzero
@@ -406,7 +406,7 @@ Exceptions:
 - PROT, If opcodes 0x01b or 0x01f are used to load a value other than 0 into a reserved or unavailable register.
 
 Instructions:
-- 0x020 (movsx): Moves a signed integer operand from the second operand, to the first. If the second operand is smaller than the first, the highest bit is copied to each higher bit in the first opernd.
+- 0x020 (movsx): Moves a signed integer operand from the second operand, to the first. If the second operand is smaller than the first, the highest bit is copied to each higher bit in the first operand.
 - 0x021 (bswap): Moves the second operand into the first, swapping the order of the bytes stored. 
 
 
@@ -428,11 +428,11 @@ Exceptions:
 - PF, if a memory operand accesses an unavailable virtual memory address
 - PROT, If opcodes 0x01b or 0x01f are used to load a value other than 0 into a reserved or unavailable register.
 
-Flags: Opcodes 0x02a-0x02c set Z and M according to the value transfered. Opcodes 0x02d-0x02f set according to the comparison performed.
+Flags: Opcodes 0x02a-0x02c set Z and M according to the value transferred. Opcodes 0x02d-0x02f set according to the comparison performed.
 
 Instructions:
 - 0x028 (repbi): Shall be immediately followed by a block operation (opcodes 0x02a-0x02f). Repeats the following operation until the condition is satisfied
-- 0x029 (repbc): Shall be immediately followed by a block operation (opcodes 0x02a-0x02f). Repeats the following operation and decrements r1 until the condition is satisified, or r1 is 0.
+- 0x029 (repbc): Shall be immediately followed by a block operation (opcodes 0x02a-0x02f). Repeats the following operation and decrements r1 until the condition is satisfied, or r1 is 0.
 - 0x02a (bcpy): Loads the value (according to `ss`) at the address in r4, and stores it to the address in r5, then adds `ss` to both r4 and r5.
 - 0x02b (bsto): Stores the value (according to `ss`) in r0 into the address in `r5`, then adds `ss` to `r5`.
 - 0x02c (bsca): Loads the value (according to `ss`) from the address in `r4` into `r0`.

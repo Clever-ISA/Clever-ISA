@@ -154,3 +154,70 @@ The following relocations are available to `ET_REL` ELF files for the Clever Arc
 | R_CLEVER_RELAX_GOT_PCREL | 21 | Same as R_CLEVER_RELAX_LONG_PCREL, but against the symbol's GOT Entry Address |
 | R_CLEVER_RELAX_PLT | 22 | Same as R_CLEVER_RELAX_LONG, but against the symbol's PLT Entry address |
 | R_CLEVER_RELAX_PLT_PCREL | 23 | Same as R_CLEVER_RELAX_LONG_PCREL, but against the symbol's PLT Entry Address |
+| R_CLEVER_DYNENT | 24 | Relocates against the 8 byte index into the dynamic symbol table for the symbol |
+
+
+## Position Independent Code And Shared Objects
+
+## Static Relocations
+
+The following relocations may not appear in a Shared Object file or Position Independent Executable:
+- R_CLEVER_16
+- R_CLEVER_32
+- R_CLEVER_64
+- R_CLEVER_SIMM
+- R_CLEVER_GOT
+- R_CLEVER_PLT
+- R_CLEVER_RELAX_LONG
+- R_CLEVER_RELAX_SHORT
+- R_CLEVER_RELAX_GOT
+- R_CLEVER_RELAX_PLT
+
+Additionally, the following relocations against symbols defined in a linked shared object may not be used:
+- R_CLEVER_16_PCREL
+- R_CLEVER_32_PCREL
+- R_CLEVER_64_PCREL
+- R_CLEVER_SIMM_PCREL
+- R_CLEVER_RELAX_LONG_PCREL
+- R_CLEVER_RELAX_SHORT_PCREL
+
+
+### Dynamic Linker
+
+The dynamic linker shall have the name `ld-clever64.so` or a platform specific name. It may have a trailing version component. 
+The fully qualified name shall be present in a `DT_SONAME` entry.
+
+Every Position Independent Executable and Dynamically Linked Executable shall have present a `PT_INTERP` section which contains the full path to this dynamic linker. This abi does not define the behaviour of a program that contains a path to any other program. 
+
+### Global Offset Table
+
+The global offset table is a table that contains addresses for each dynamic symbol linked.
+The address of an element in the global offset table is obtainable with the R_CLEVER_GOT and R_CLEVER_GOT_PCREL relocations. Each element of the global offset table is 8 bytes long and shall be a valid virtual address.
+
+The first element of the global offset table shall point to a function in the dynamic linker to resolve a symbol entry. The second is reserved for use by the dynamic linker. Every subsequent entry is used by some unique symbol which may be dynamically relocated. The entry shall either be bound to the resolved dynamic symbol or to an offset of 12 from the start of the procedure linkage table entry
+
+### Procedure Linkage Table
+
+The Procedure Linkage Table is a table of stubs for lazily binding to functions in the global offset table. An entry in the Procedure Linkage Table shall contain the following machine code:
+
+```
+movdst.r10 eight mref <symbol>@GOTPCREL(ip)
+ijmp r10
+push eight <symbol>@DYNENT
+push eight mref _GLOBAL_OFFSET_TABLE_+8(ip)
+movdst.r10 eight mref _GLOBAL_OFFSET_TABLE(ip)
+ijmp r10
+```
+
+The assembly code above translates to the following machine code in hexadecimal, with each instruction on its own line and zeroes replacing the values of static relocations:
+```
+[
+    00 aa e6 30 00 00 00 00 00 00 00 00 // R_CLEVER_GOT_PCREL(<symbol>)
+    7c 9a 
+    01 40 c4 00 00 00 00 00 00 00 00 00 // R_CLEVER_DYNENT(<symbol>)
+    01 40 e6 30 00 00 00 00 00 00 00 00 // R_CLEVER_64_PCREL(_GLOBAL_OFFSET_TABLE+8)
+    00 aa e6 30 00 00 00 00 00 00 00 00 // R_CLEVER_64_PCREL(_GLOBAL_OFFSET_TABLE_)
+    7c 9a
+]
+```
+
