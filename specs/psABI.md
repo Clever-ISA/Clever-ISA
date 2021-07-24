@@ -159,7 +159,7 @@ The following relocations are available to `ET_REL` ELF files for the Clever Arc
 
 ## Position Independent Code And Shared Objects
 
-## Static Relocations
+### Static Relocations
 
 The following relocations may not appear in a Shared Object file or Position Independent Executable:
 - R_CLEVER_16
