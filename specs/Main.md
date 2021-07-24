@@ -232,7 +232,7 @@ Instructions:
 Opcodes 0x008-0x00b
 Operands: 2 for opcodes 0x008 and 0x009, 1 for opcodes 0x00a and 0x00b.
 
-h: Opcodes 0x00a and 0x00b only, the general purpose register for the source (0x00a) or destination (0x00b) operand. Otherwise, reserved and shall be zero
+h: Opcodes 0x00a and 0x00b only, the general purpose register for the destination (0x00a) or source (0x00b) operand. Otherwise, reserved and shall be zero
 
 Operand Constraints: For opcodes 0x008 and 0x009, the first operand shall be a memory reference or register, and at least one operand shall be a register. For Opcode 0x009, the second operand shall be either an indirect register, or a memory reference. 
 
@@ -259,7 +259,7 @@ All memory accesses are performed atomically, wrt. other memory accesses, and op
 
 ### Subroutines/Unconditional Jumps
 
-Opcodes: 0x7C0-0x7C5, 0x7c8-0x7c9
+Opcodes: 0x7c0-0x7c5, 0x7c8-0x7c9
 Operand: For opcodes 0x7c0, 0x7c1, and 0x7c8, 1 ss immediate (not in Operand Form). 
 h: For opcodes 0x7c0, 0x7c1, and 0x7c8, `[ss i0]`, where ss is `log2(size)-1` in bytes, and if `i` is set, the signed (2s compliment) value is added to `ip` to obtain the actual address. For opcode 0x7c4, and 0x7c9, `rrrr`, where `r` is the gpr (0<=r<16) that contains the branch target address. For all other opcodes, shall be 0.
 
