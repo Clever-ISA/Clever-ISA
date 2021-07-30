@@ -1,5 +1,14 @@
 # Clever ISA
 
+## Notation
+
+This document uses encoding notation denoted by square brackets, with a sequence of letters, zeroes and ones. Each unit denotes a single bit, and may be grouped together with the same letter to form larger values. A zero indicates a bit that is required to be `0`, and a one indicates a bit that is required to be `1`. 
+
+For Example, the encoding `[11 00 aa bb]` denotes an 8-bit value which starts with 2 `1` bits, followed by 2 `0` bits, then 2 bits called `a`, and 2 bits called `b`. The named groups of bits will have meaning assigned in the following paragraph. 
+
+
+Encodings that denote values longer than 8 bits are in Big-Endian (Most significant byte a lowest order address). 
+
 ## License
 
 Copyright (c)  2021  Connor Horman.
@@ -15,11 +24,11 @@ A copy of the license is included in the repository, under the file entitled LIC
 | r   | Register Name | Availability   |                                  Notes                                  |
 | --- | ------------- | -------------- |:-----------------------------------------------------------------------:|
 | 0   | r0/racc       | General        |                                                                         |
-| 1   | r1/rsrc       | General        |                     Counter for block instrunctions                     |
-| 2   | r2/rdst        | General        |                                                                         |
-| 3   | r3/rcnt       | General        |                                                                         |
-| 4   | r4            | General        |             Source Pointer Register for block instructions.             |
-| 5   | r5            | General        |           Destination Pointer Register for block instructions           |
+| 1   | r1/rsrc       | General        |Source Pointer Register for block instructions.|
+| 2   | r2/rdst        | General        |Destination Pointer Register for block instructions|
+| 3   | r3/rcnt       | General        | Counter for block instructions |
+| 4   | r4            | General        |                          |
+| 5   | r5            | General        |                      |
 | 6   | r6/fbase      | General        |                        Stack Frame Base Address                         |
 | 7   | r7/sptr       | General        |                    Stack Pointer/Frame Head Address                     |
 | 8   | r8            | General        |                                                                         |
@@ -63,10 +72,14 @@ A copy of the license is included in the repository, under the file entitled LIC
 
 All unmentioned register numbers are reserved and have no name
 
-Reserved Registers cannot be accessed (undefined)
-FP Registers cannot be accessed if cr0.FPEN=0. 
-Supervisor registers cannot be accessed in Program Execution Mode
-CPUInfo registers cannot be written to. CPUInfo registers cannot be read in Program Execution Mode unless the corresponding bit in ciread is set.
+Read Only Registers cannot be written to, except by certain instructions. Any instruction that violates this constraint triggers UND.
+
+Reserved Registers cannot be accessed (undefined). Any instruction that accesses a reserved register triggers UND. 
+
+Supervisor registers cannot be accessed in Program Execution Mode. Any instruction that accesses a Supervisor register in Program Execution Mode triggers PROT.
+
+CPUInfo registers cannot be written to; violating this constraint triggers UND. CPUInfo registers cannot be read in Program Execution Mode unless the corresponding bit in ciread is set; violating this constraint triggers PROT. 
+
 
 flags Register bitfield:
 
@@ -77,9 +90,9 @@ flags Register bitfield:
 |2   | Overflow (V)| Set by arithmetic operations that cause signed overflow
 |3   | Negative (N)| Set by operations that have a negative result
 |4   | Parity (P\) | Set by operations that have a result with Odd Parity.
-|19  | Mode (XM)  | If clear, operating in supervisor mode, otherwise program execution mode. Cannot be written to from program execution mode, reguardless of flprotect.
+|19  | Mode (XM)  | If clear, operating in supervisor mode, otherwise program execution mode. Cannot be written to from program execution mode, regardless of flprotect.
 
-All unmentioned flags are reserved and writes to those flags are masked.
+Any attempt to write to an unmentioned bit or to write to either bit 19 or any bit other than bits 0-4 from program execution mode, shall be ignored.
 
 Processor Control (cr0) bitifield
 
@@ -106,16 +119,10 @@ Virtual Address Size, as determined by cpuex2.VAS and cr0.PTL is assigned as fol
 Physical Address Size, as determined by cpuex2.PAS is assigned as follows:  0=32-bit, 1=36-bit, 2=40-bit, 3=44-bit, 4=48-bit, 5=52-bit, 6=56-bit, 7=60-bit.
 
 
-
-[^1]: Written by `call`, `ret`, `reti`, `scall`, `scret`, `int`, and `b`*`cc`*.
-[^2]: Except to the pop, reti, and scret instructions. flprotect masks writes from the pop instruction, other than bits 0-3, in Program Execution Mode
-[^3]: Machine Specific Control Registers may be unavailable and reserved in Supervisor mode, and their behavior is not specified. Refer to documentation for the particular Processor ID. The author of this documentation does not endorse the content of such documentation. An implementation shall not make the registers available to program execution mode, unless permitted by the supervisor.
-[^4]: Tools that produce machine code for this architecture may rely on register 63 being reserved. 
-
 ## Operands
 
-Operands are encoded in clever as 2 bytes, in big endian (Most-significant Byte at the lowest address), using the 2 most significant bits as a control indicator. 
-Not all bits of encoded operands are used. Any unused/reserved bits must be set to 0 or an undefined instruction exception is raised. These bits may be given meaning in future versions
+Operands are encoded in clever as 2 bytes, known as the operand control structure, in big endian (Most-significant Byte at the lowest address), using the 2 most significant bits as a control indicator. The definitions of each encoded form are defined below. 
+Not all bits of encoded operands are used. Any unused/reserved bits must be set to 0 or an undefined instruction exception is raised. These bits may be given meaning in future versions or extensions
 
 ### Register Operand
 
@@ -149,7 +156,7 @@ An up to 12-bit immediate value can encoded directly into the operand. If `r` is
 
 An Immediate value, with a size given by ss (`log2(size)-1`).  If `r` is set, then the value of `ip` is added to the signed immediate value.
 
-`yy` and `yyyyyyyy` are all reserved and must be zero. The immediate value follows the operand control structure. 
+`yy` and `yyyyyyyy` are all reserved and must be zero. The immediate value follows the operand control structure.
 
 If `m` is set, the the immediate value is a memory reference, and the operand accesses the memory address given by the immediate value. `zz` is the size control (`log2(size)`) for the referent. If `m` is not set, `zz` is reserved and shall be zero.
 
@@ -159,7 +166,9 @@ Long Immediate Values and values in memory are encoded in the Little-Endian byte
 
 ## Instruction Encoding
 
-Instruction opcodes are encoded as 2 bytes, in big endian byte order. The most significant 12 bits of the instruction determine the opcode, and the least significant 4 bits encode instruction specific information, referred to in this document as `h`. Not all instructions make use of the `h` bits. If an instruction does not use a particular bit in the `h` field, it must be set to zero or an undefined instruction exception occurs. Such bits may be used in future revisions of this document, or extensions. 
+Instruction opcodes are encoded as 2 bytes, in big endian byte order. The most significant 12 bits of the instruction determine the opcode, and the least significant 4 bits encode instruction specific information, referred to in this document as `h`. Not all instructions make use of the `h` bits. 
+If an instruction does not use a particular bit in the `h` field, it must be set to zero or an undefined instruction exception occurs. 
+Such bits may be used in future revisions of this document, or extensions. 
 
 Opcode:
 `[oooooooooooo hhhh]`: `o` is the 12-bit opcode, and `hhhh` is used for instruction specific information.
@@ -348,7 +357,7 @@ Instructions:
 - 0x016 (push*r*): Same as 0x014, but operates on the register indicated by `h`
 - 0x017 (pop*r*): Same as 0x015, but operates on the register indicated by `h`
 
-
+If the operand (opcodes 0x014 and 0x015) or the implicit register (opcodes 0x016 and 0x017) mention `sp`, the value of the register before the operation is used for the operand. All memory operations are atomic.
 
 ### Bulk Register Storage
 
@@ -374,12 +383,14 @@ Exceptions:
 Instructions:
 - 0x018 (stogpr): Stores the value of each general purpose register (0<=r<16) to the memory operand.
 - 0x019 (stoar): Stores the value of each program register (0<=r<32) to the memory operand. Any reserved or unavailable floating-point register stores 0 instead.
-- 0x01a (ldgpr): Loads the value of each general purpose register (0<=r<16) from the memory operand. 
-- 0x01b (ldar): Loads the value of each program register (0<=r<32) from the memory operand. 
+- 0x01a (rstogpr): Loads the value of each general purpose register (0<=r<16) from the memory operand. 
+- 0x01b (rstoar): Loads the value of each program register (0<=r<32), other than `ip`, from the memory operand. The value of any reserved or protected bit in `flags` is ignored in the memory region.
 - 0x01c (pushgpr): Pushes the value of each general purpose register (0<=r<16) to the stack. Lower memory addresses (closer to the stack head) store lower numbered registers.
 - 0x01d (pushar): Pushes the value of each program register (0<=r<32) to the memory operand. Any reserved or unavailable register stores 0 instead. Lower memory addresses (closer to the stack head) store lower numbered registers.
 - 0x01e (popgpr): Pops the value of each general purpose register from the stack.
-- 0x01f (popar): Pops the value of each program register (0<=r<32) from the stack. 
+- 0x01f (popar): Pops the value of each program register (0<=r<32), other than `ip`, from the stack. The value of any reserved or protected bit in `flags` is ignored in the memory region.
+
+If the operand to `ldgpr` or `ldar` is an indirect register, the address to load each register from is determined prior to performing the operation. `pushgpr` and `pushar` update the value of the stack pointer after it is stored, and `popgpr` and `popar` do not update the value of the stack pointer after restoring it. The entire memory operation shall be atomic.
 
 ### Converting Moves
 
@@ -884,4 +895,19 @@ The following changes are reserved to machine vendors:
 - Contents of all cpuinfo registers
 - Availability and behaviour of instructions 0xfe0-0xfff. 
 - The timing, latency, and throughput of any instructions
+
+## Symbol Glossary
+
+The following well known symbols are given the following meanings when they occur within encodings:
+
+| Symbol | Size(s) | Meaning | 
+|--------|---------|---------|
+| o      | 12 | Opcode  |
+| h      | 4  | Instruction-specific Control Bits |
+| s      | 2 | size control value, either log2(size) or `log2(size)-1`. Larger sizes may be possible in extensions |
+| z      | 2 | Alternative size control bits |
+| r      | 4 or 6 | Register Number. Larger sizes may be possible with extensions |
+| c      | 4   | Condition Code |
+| l      | 1   | Lock Memory Operations |
+| f      | 1   | Disable flags modification |
 
