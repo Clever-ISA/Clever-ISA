@@ -23,7 +23,7 @@ The size of any pointer type shall be 8.
 
 ### Primitive Type Alignment
 
-The alignment of each primitive type (`char`, `signed char`, `short`, `int`, `long`, `long long`, `float`, `double`, `long double`, unsigned counterparts thereof, and pointer types) shall all be equal to the size of the type
+The alignment of each primitive type (`char`, `signed char`, `short`, `int`, `long`, `long long`, `float`, `double`, `long double`, unsigned counterparts thereof, and pointer types) shall all be equal to the size of the type. If an implementation may define extended integer or floating-point types, then the alignments of those types shall be equal to the size, up to a maximum alignment of 128.
 
 
 ### Enumeration Base Type
