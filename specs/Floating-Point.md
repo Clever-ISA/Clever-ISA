@@ -77,7 +77,7 @@ Instructions:
 floating-point moves use the size of the floating-point operand to determine the format. 
 `size`=1 is not valid for any such operand. 
 For `movf` and `movfd`, the size of both operands are used, and the value is converted from the source format to the destination format.
-For all operations other than `movfd`, IEEE754 binary floating-point format is used for the size of the operand. For `movfd`, the corresponding decimal format is used.
+For all operations, IEEE754 binary floating-point format is used for the size of the operand.
 
 Fixed point operands (`movxf` and `movfx`) use the higher half of the value for the integer portion, and the lower half for fractional portion. 
 

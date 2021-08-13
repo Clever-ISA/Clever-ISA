@@ -94,7 +94,7 @@ flags Register bitfield:
 
 Any attempt to write to an unmentioned bit or to write to either bit 19 or any bit other than bits 0-4 from program execution mode, shall be ignored.
 
-Processor Control (cr0) bitifield
+Processor Control (cr0) bitfield
 
 | bit | Name (id)                |                              Notes                               |
 | --- | ------------------------ |:----------------------------------------------------------------:|
@@ -323,7 +323,7 @@ Opcode 0x7c6 performs the following operations, ignoring flags.XM and register p
 - `ip` is loaded from `scdp`
 - Control Resumes from the new value of `ip`.
 
-Opcode 0x7c7 performs the following operantions, ignoring flags.XM and register protection:
+Opcode 0x7c7 performs the following operations, ignoring flags.XM and register protection:
 - If `itab[inum].flags.PX` is clear, and `flags.XM=1`, then PROT is raised
 - Otherwise, the value `sp` is copied into a temporary location, then `sp` is loaded from `itab[inum].sp`
 - The copied value of `sp` is pushed onto the stack
@@ -429,7 +429,7 @@ Opcodes: 0x028-0x02f
 
 Operands: None.
 
-h: For opcode 0x028 and 0x029, `[cccc]` where `cc` is the condition code encoding (see [Condition Code Encoding](#condition-code-encoding)). For opcodes 0x02a-0x02f,  `[00 ss]`, where `ss` indicates the size of each individual operation.
+h: For opcode 0x029, `[cccc]` where `cc` is the condition code encoding (see [Condition Code Encoding](#condition-code-encoding)). For opcodes 0x02a-0x02f,  `[00 ss]`, where `ss` indicates the size of each individual operation.
 
 Exceptions:
 - PF, if any address is an unavailable virtual memory address
@@ -539,10 +539,12 @@ Instructions:
 - 0x200 (xchg): Exchanges the value im the first operand with the second
 - 0x201 (cmpxchg): Compares the value in the first operand with the value in the second and stores the third in the first if the comparison sets the Z flag, otherwise the value in the first operand is stored in the second
 - 0x202 (wcmpxchg): Same as 0x201, but the comparison is permitted to spuriously fail
-- 0x203 (fence): Synchronizes memory accesses accross cpus. Immediately before the instruction is executed, all memory operations performed on the current cpu by prior instructions shall be completed, and no new memory accesses performed on the current cpu by subsequent instructions shall begin until the instruction completes. All fence instructions on all cpus shall occur in some total order.
+- 0x203 (fence): Synchronizes memory accesses across cpus. Immediately before the instruction is executed, all memory operations performed on the current cpu by prior instructions shall be completed, and no new memory accesses performed on the current cpu by subsequent instructions shall begin until the instruction completes. All fence instructions on all cpus shall occur in some total order.
 
 All operations described in this section are totally atomic.
 wcmpxchg exists to permit efficient implementations which can be made use of when reliable success is not necessary.
+
+The `fence` instruction is analogous to the C++11 function `std::atomic_thread_fence`, called with `std::memory_order_seq_cst`.
 
 ### Branches
 
@@ -561,10 +563,10 @@ Exceptions:
 - PROT, if the target address is out of range for the PTL mode.
 - PF, if a memory operand accesses an unavailable virtual memory address
 - PF, if paging is disable, and a memory operand accesses an out of range physical address
-- XA, if the desination address is not 2-byte aligned
+- XA, if the destination address is not 2-byte aligned
 
 Instructions:
-- Opcodes 0x700-0x73F, if the condition indicated by *c* is satisified, branches to `ip+imm`
+- Opcodes 0x700-0x73F, if the condition indicated by *c* is satisfied, branches to `ip+imm`
 - Opcodes 0x780-0x78F, if the condition indicated by *c* is satisfied, branches to the address stored in `r`.
 
 #### Condition Code Encoding
@@ -635,7 +637,7 @@ Exceptions:
 - PROT, if flags.XM=1
 - Any other Exception documented by the machine
 
-Instructions 0xfe0-0xfff are reserved for machine dependent behaviour and will not be assigned further meaning in future ISA versions. Refer to machine specific documentation.
+Instructions 0xfe0-0xfff are reserved for machine dependent behavior and will not be assigned further meaning in future ISA versions. Refer to machine specific documentation.
 
 ### Halt
 

@@ -11,12 +11,13 @@ If a CPU indicates support for these extensions by setting cpuex2.VEC, a supervi
 ## Interaction with Floating-point extensions
 
 This extension interacts heavily with features described in the Floating-Point extension. 
-It is assumed, though not mandated, within this document that CPUs that comply with the vector extensions described herein also comply with the floating-point extensions. 
+It is assumed within this document, though not mandated, that CPUs that comply with the vector extensions described herein also comply with the floating-point extensions. 
 The floating-point instructions, floating-point registers and cr0.FPEN all refer to the same defined within the floating-point extensions.
 
 ## Vector Registers
 
-These vector extensions define an additional class of register, and, in doing so, expand the register space from 64 to 128. Registers 64-127 are called vector registers. Every even numbered vector register is indicated as `v`*`n`*, with successive values of `n` starting from `0`, and every odd numbered vector register is indicated as `v`*`n*``h`. Vector regtisters have register class `VectorHalf`, and can be used in any instruction that expects a general purpose registers or as floating-point registers. VectorHalf registers are simple and are accessible only if `cr0.VEC=1`. 
+These vector extensions define an additional class of register, and, in doing so, expand the register space from 64 to 128. Registers 64-127 are called vector registers. Every even numbered vector register is indicated as `v`*`n`*`l`, with successive values of `n` starting from `0`, and every odd numbered vector register is indicated as `v`*`n`*`h`. A vector pair, labeled `v`*`n`*, consists of the 64-bits from `v`*`n`*`l`, followed by the 64-bits from `v`*`n`*`h`.
+Vector registers have register class `VectorHalf`, and can be used in any instruction that expects a general purpose registers or as floating-point registers. VectorHalf registers are simple and are accessible only if `cr0.VEC=1`. 
 
 ## Changes to Operand Structure
 
@@ -24,11 +25,11 @@ These vector extensions define an additional class of register, and, in doing so
 
 The structure of the direct register operand is changed to the following: `[000 yyy ss x rrrrrrr]`. The meaning of each indicated group of bits is the same as the original structure for the Main specification.
 
-The notable changes are as follows: The third most significant bit (previously) reserved, is changed to be a control bit for register operands. `r` is expanded to be 7 bits to accomidate accessing vector registers as normal. 
+The notable changes are as follows: The third most significant bit (previously) reserved, is changed to be a control bit for register operands. `r` is expanded to be 7 bits to accommodate accessing vector registers as normal. 
 
 ### Vector Register Operands
 
-A new class of operand, modifying the Register operand structure is defined for use in vectorized instructions. The strucutre of vector register operands is the following `[001 y ssss xx 1 rrrrr]`
+A new class of operand, modifying the Register operand structure is defined for use in vectorized instructions. The structure of vector register operands is the following `[001 y ssss xx 1 rrrrr]`
 
 Where: `y` and `xx` are reserved for future use, `ssss` is the extended size control value=`log2(size)`, and `1rrrrr` is the vector register number discarding the least significant bit. 
 Vector Register Operands address pairs of vector registers, according to `rrrrr`: For example, rrrrr=00000 accesses `v0` and `v0h`. Non vector registers may not be address using this operand type, and 
@@ -50,7 +51,7 @@ An `ss` value of 3 may only be used with the `vmov` instruction, may not be pcre
 ## Vectorize Scalar Instructions
 
 Opcode: 0x400
-Operands: One Instruction followed by it's opernads
+Operands: One Instruction followed by it's operands
 h: `[00 ss]`, where `ss` is the size of each value operated on by the instruction.
 
 Operand Constraints: At least one operand for the instruction following the prefix shall be a vector operand. For opcode 0x200, both operands shall be vector registers. For opcodes 0x201-0x202, the first two operands shall be vector registers and the third shall be an immediate value with size equal to the size control of both vector registers (An immediate value with size 16 is permitted)
@@ -64,7 +65,7 @@ Exceptions:
 Instructions:
  - Reads and decodes a full instruction following the prefix, and applies it to each of the vector elements in each specified vector register, and the exact value of each scalar operand.
 
-Flags: Any prefixed instructions that modifies flags sets the M, Z, and P flags according to the whole value in the vector result. The C, and V flags are not modified by the vectorized instruction (Note: This is a defect. Later versions will provide a mechanism for determining when individual operations in a vectorized operation)
+Flags: Any prefixed instructions that modifies flags sets the M, Z, and P flags according to the whole value in the vector result. The C, and V flags are not modified by the vectorized instruction (Note: This is a defect. Later versions will provide a mechanism for determining when individual operations in a vectorized operation produces a carry or signed overflow)
 
  The following instructions may have a `vec` prefix:
  - Opcodes 0x001-0x007
