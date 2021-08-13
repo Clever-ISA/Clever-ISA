@@ -139,10 +139,11 @@ When reading from a register operand, only the low order bytes indicated by `ss`
 
 `[01 oooo lll k ss rrrr]`
 
-ss, and rrrr have the same meanings as in a Register value.  Only General registers may be accessed by indirect addressing modes
+ss, and rrrr have the same meanings as in a Register value. Only General registers may be accessed by indirect addressing modes.
 
-If `k` is set, then `oooo` is the offset to add to the value of rrrr, after scaling by the scaling factor in `lll`=log2(scale)). 
-If `k` is clear, then `oooolll` form the immediate value added to the value of `rrrr`.
+If `k` is set, then `oooo` is the offset to add to the value in `rrrr`, after scaling by the scaling factor in `lll`=log2(scale). 
+If `k` is clear, then `oooo` is the general purpose register that contains the of the offset, which is added to the value in `rrrr` after scaling by the scaling factor in `lll`=log2(scale). 
+
 
 ### Short Imm
 
