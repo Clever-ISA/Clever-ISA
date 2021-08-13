@@ -5,7 +5,7 @@
 The architecture for the toolchain name should be `clever`, or clever followed by the publication version. 
 Toolchains should not generate code for an unpublished version of the clever ISA specification.
 
-The vdefault vendor name for targets should be `unknown`
+The default vendor name for targets should be `unknown`
 
 ## Target Features
 
@@ -17,4 +17,5 @@ Each extension should be given a correponding target feature name. The names for
 | Floating-Point| fp      | 1.0 or earlier|
 
 
-Toolchains should provide mechanisms for disabling default-enabled target features and for enabling default-disbaled target features.
+Toolchains should provide mechanisms for disabling default-enabled target features and for enabling default-disabled target features. 
+If the fp feature is disabled for during code generation, the Proposed psABI technical document does not specify the ABI of parameters and return values of class FLOAT.
