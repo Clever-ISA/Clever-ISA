@@ -9,7 +9,7 @@ The default vendor name for targets should be `unknown`
 
 ## Target Features
 
-Each extension should be given a correponding target feature name. The names for the following target names are given as follows, including the version of the clever ISA targetted where it should start being enabled by default:
+Each extension should be given a corresponding target feature name. The names for the following target names are given as follows, including the version of the clever ISA targeted where it should start being enabled by default:
 
 |  Extension    | Feature | Default Since |
 |---------------|---------|---------------|
