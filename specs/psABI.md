@@ -46,6 +46,14 @@ The Base/Underlying type for enums declared in C, and unscoped enums declared in
 
 If the implementation of this ABI defines a type `_Float16` or `__float16`, then it shall be represented according to the IEEE 754 standard, as a half-precision binary floating-point value. 
 
+### Stdlib types
+
+The fenv_t type is a typedef for `unsigned long`. 
+
+The `jmp_buf` type shall be a typedef for `unsigned long[32]`
+
+
+
 ## Calling Convention
 
 ### Registers
@@ -97,7 +105,7 @@ Parameters with class INTEGER or remaining parameters with class FLOAT are modif
 - If the modified type is 16 bytes in size, it shall be split into a parameter pair of class INTEGER with size 8.
 - Otherwise, the parameter is treated as though it has class MEMORY.
 
-The first 8 modified parameters shall be passed in the registers `r2`, `r1`, `r3`, `r4`, `r5`, `r6`, `r7`, and `r9`. If the 8th parameter is the first parameter in a split parameter pair, it shall instead be as the last value on the stack. Remaining parameters are pushed to the stack from right to left. The any bits in the parameter that exceed the size of the type shall be zero.
+The first 8 modified parameters shall be passed in the registers `r2`, `r1`, `r3`, `r4`, `r5`, `r9`, `r10`, and `r11`. If the 8th parameter is the first parameter in a split parameter pair, it shall instead be as the last value on the stack. Remaining parameters are pushed to the stack from right to left. Any bits in the parameter that exceed the size of the type shall be zero.
 
 Parameters with class MEMORY, or parameters with class INTEGER or class FLOAT exceeding 16 bytes in size are replaced by a pointer to the value in some well-aligned memory. This memory shall not be read by the caller after the function returns (but may be written to and reused). The pointer is then substituted for the parameter and passed as normal.
 

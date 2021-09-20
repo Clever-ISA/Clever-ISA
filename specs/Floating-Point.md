@@ -50,7 +50,7 @@ If Opcodes 0x001-0x007 have an operand that's a floating-point register, UND is 
 | 4     | DENORM   | Denormal Values enabled when set, otherwise underflow to +/-0.0|
 | 8-13  | EXCEPT   | The current floating point exceptions that are asserted. |
 | 14-19 | EMASK    | The exceptions that are masked (will not trigger a hardware exception)|
-
+| 20-21 | EOPSS    | The upper-bound for extended precision                   |
 
 The value of fpcw.RND is given as follows:
 | Mode | Description                    |
@@ -136,6 +136,8 @@ For all operations, IEEE754 binary floating-point format is used for the size of
 Fixed point operands (`movxf` and `movfx`) use the higher half of the value for the integer portion, and the lower half for fractional portion. 
 
 All memory accesses are performed atomically. Note that the entire operation is not required to be atomic.
+
+Overflow caused by `movfsi` and `movfx` yields the maximum (for positive inputs) or minimum (for negative inputs) value of the type. Underflow yields 0. If any operand is a NaN, the result is the minimum value of the type.
 
 ### Floating-point Arithmetic
 
