@@ -40,7 +40,7 @@ A copy of the license is included in the repository, under the file entitled LIC
 | 14  | r14           | General        |                       Fast Indirect Call Address                        |
 | 15  | r15/link      | General        |                        Fast Call Return Address                         |
 | 16  | ip            | Readonly[^1]   |                           Instruction Pointer                           |
-| 17  | flags         | Readonly[^2]   |                            Processor Status                             |                                                                       |
+| 17  | flags         | Flags          |                            Processor Status                             |                                                                       |
 | 32  | cr0           | Supervisor     |                            Processor Control                            |
 | 33  | cr1/page      | Supervisor     |            Physical Address of the Virtual Memory Page Table            |
 | 34  | cr2/flprotect | Supervisor     |                  Supervisor Write protected flag bits.                  |
@@ -74,6 +74,8 @@ All unmentioned register numbers are reserved and have no name
 
 Read Only Registers cannot be written to, except by certain instructions. Any instruction that violates this constraint triggers UND.
 
+The Flags register may be written to, but writes only affect certain bits, and may differ between execution modes.
+
 Reserved Registers cannot be accessed (undefined). Any instruction that accesses a reserved register triggers UND. 
 
 Supervisor registers cannot be accessed in Program Execution Mode. Any instruction that accesses a Supervisor register in Program Execution Mode triggers PROT.
@@ -92,7 +94,16 @@ flags Register bitfield:
 |4   | Parity (P\) | Set by operations that have a result with Odd Parity.
 |19  | Mode (XM)  | If clear, operating in supervisor mode, otherwise program execution mode. Cannot be written to from program execution mode, regardless of flprotect.
 
-Any attempt to write to an unmentioned bit or to write to either bit 19 or any bit other than bits 0-4 from program execution mode, shall be ignored.
+Any attempt to write to an unmentioned bit shall be ignored. 
+Bit 19 may be modified only by the interrupt/exception procedure or the supervisor call procedure (scall, opcode 0x7c6), and by the scret (opcode 0xfc8) and reti (opcode 0xfc9) instructions. All other writes to bit 19 shall be ignored.
+Many instructions will set some of or all of bits 0-4 in flags, based on a result. 
+The instructions will mention which flags are affected in a *Flags* section of the instruction definition.
+The flags are set as follows:
+* flags.C is set if an arithmetic operation overflows the unsigned operand for the destination operand size, and cleared otherwise. 
+* flags.Z is set if an operation loads or stores zero, or an arithmetic or logic operand's result is zero, and cleared otherwise.
+* flags.V is set if the arithmetic operation overflows the signed operand (that is, changes sign without a Carry) for the destination operand size, and cleared otherwise. 
+* flags.N is set if the operation loads or stores a negative number (most significant bit set), or an arithmetic or logic operand's result is a negative signed number, and cleared otherwise.
+* flags.P is set if the operation loads a value with a odd parity (odd number of 1 bits set in the value), or an arithetmic or logic operand's result is such a value, and cleared otherwise.
 
 Processor Control (cr0) bitfield
 
@@ -117,6 +128,7 @@ CPU Extension Availability flags (cpuex2)
 Virtual Address Size, as determined by cpuex2.VAS and cr0.PTL is assigned as follows: 0=32-bit, 1=40-bit, 2=48-bit, 3=56-bit, 4=64-bit.
 
 Physical Address Size, as determined by cpuex2.PAS is assigned as follows:  0=32-bit, 1=36-bit, 2=40-bit, 3=44-bit, 4=48-bit, 5=52-bit, 6=56-bit, 7=60-bit.
+
 
 
 ## Operands
@@ -193,6 +205,7 @@ Exceptions:
 Opcodes 0x000 and 0xfff are reserved and always generate an undefined instruction exception. 
 Tools generating code for this architecture can rely on these opcodes not being defined.
 
+(Note: This means that instruction streams consisting of all 0 bytes or all 0xff bytes will cause an exception)
 
 ### Arithmetic/Logic Instructions 
 
@@ -584,7 +597,7 @@ cc value | Name       | Condition
  7       | Minus      | flags.N=1
  8       | Plus       | flags.N=0
  9       | Above or Eq| flags.C=0 or flags.Z=1
- 10      | Greater/Eq | flags.N=flags.V for flags.Z=1
+ 10      | Greater/Eq | flags.N=flags.V or flags.Z=1
  11      | Greater    | flags.N=flags.V
  12      | Not Zero/Eq| flags.Z=0
  13      | No Overflow| flags.V=0

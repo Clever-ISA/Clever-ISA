@@ -50,7 +50,7 @@ If the implementation of this ABI defines a type `_Float16` or `__float16`, then
 
 ### Registers
 
-The following registers shall be callee saved: `r6`, `r7`, `r12`, `r13`, `r14`, `r15`, `f6`, `f7`, `v32` through `v63h`. 
+The following registers shall be callee saved: `r6`, `r7`, `r12`, `r13`, `r14`, `r15`, `f6`, `f7`, `v32l` through `v63h`. 
 
 All other registers are caller saved.
 

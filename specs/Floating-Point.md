@@ -24,6 +24,7 @@ The following previously reserved registers are defined as part of this extensio
 
 | Number   | Register Name | Availability   |
 |----------|---------------|----------------|
+| 19       | fpcw          | FPFLAGS        |
 | 24       | f0            | FP             |
 | 25       | f1            | FP             |
 | 26       | f2            | FP             |
@@ -33,11 +34,39 @@ The following previously reserved registers are defined as part of this extensio
 | 30       | f6            | FP             |
 | 31       | f7            | FP             |
 
-Registers listed with FP availability are floating-point registers. They may be accessed in any mode when cr0.FPEN=1. 
+Registers listed with FP availability are floating-point registers. They may be accessed in any mode when cr0.FPEN=1. Register 19 (fpcw) may be accessed when cr0.FPEN=1. 
+
+Bit 17 (FPEN) of register 17 (flags) shall be set to 1 when cr0.FPEN=1, and 0 otherwise. This bit cannot be modified by software.
 
 If Opcodes 0x001-0x007 have an operand that's a floating-point register, UND is raised.
 
 `mov`, `test`, `cmp`, `cmpxchg`, and `xchg` may all have floating-point register operands. If any of these instructions do, they operate on the value bitwise. In particular, `cmp` may be used to totally order floating-point values.
+
+`fpcw` shall consist of the following control word for floating-point operations
+
+| Bit   | Name     | Description                                              |
+|-------|----------|----------------------------------------------------------|
+| 0-2   | RND      | The current rounding mode for floating point operations. |
+| 4     | DENORM   | Denormal Values enabled when set, otherwise underflow to +/-0.0|
+| 8-13  | EXCEPT   | The current floating point exceptions that have occured. |
+| 14-19 | EMASK    | The exceptions that are masked                           |
+
+
+The value of fpcw.RND is given as follows:
+| Mode | Description                    |
+|------|--------------------------------|
+| 0    | Towards ∞ (rounding up)        |
+| 1    | Towards -∞ (rounding down)     |
+| 2    | Towards 0  (truncation)        |
+| 3    | Half Up                        |
+| 4    | Half To Even                   |
+
+The bits in fpcw.EXCEPT and fpcw.EMASK are set corresponding to the following numbered floating-point exceptions (IE. if the 0th exception is raised, then bit 8 of fpcw is set, and if the 6th exception is masked, then bit 19 of fpcw is set):
+| Exception | Name    | Description                      |
+|-----------|---------|----------------------------------|
+| 0         | INVALID | Invalid/Undefined Operation      |
+| 1         | 
+
 
 
 ## Instructions
@@ -154,6 +183,12 @@ Instructions:
 - 0x129 (hypot3): Computes the hypotenuse of the three operands and stores the result in teh first.
 
 All floating-point operations described within this section shall be performed to within 0.5 ULPs of the exact value. No other requirements are imposed on instructions in this section.
+
+fcmp (0x124) and fcmpz (0x) sets flags as follows: 
+If any operand 
+If the first operand is less than the other, sets `V` to `N`, otherwise sets `V` to `~N`.
+If the second operand is equal to the other, sets `Z`, otherwise clears `Z`.
+
 
 
 ## Exceptions
