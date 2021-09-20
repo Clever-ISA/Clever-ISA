@@ -48,8 +48,8 @@ If Opcodes 0x001-0x007 have an operand that's a floating-point register, UND is 
 |-------|----------|----------------------------------------------------------|
 | 0-2   | RND      | The current rounding mode for floating point operations. |
 | 4     | DENORM   | Denormal Values enabled when set, otherwise underflow to +/-0.0|
-| 8-13  | EXCEPT   | The current floating point exceptions that have occured. |
-| 14-19 | EMASK    | The exceptions that are masked                           |
+| 8-13  | EXCEPT   | The current floating point exceptions that are asserted. |
+| 14-19 | EMASK    | The exceptions that are masked (will not trigger a hardware exception)|
 
 
 The value of fpcw.RND is given as follows:
@@ -61,13 +61,27 @@ The value of fpcw.RND is given as follows:
 | 3    | Half Up                        |
 | 4    | Half To Even                   |
 
-The bits in fpcw.EXCEPT and fpcw.EMASK are set corresponding to the following numbered floating-point exceptions (IE. if the 0th exception is raised, then bit 8 of fpcw is set, and if the 6th exception is masked, then bit 19 of fpcw is set):
-| Exception | Name    | Description                      |
-|-----------|---------|----------------------------------|
-| 0         | INVALID | Invalid/Undefined Operation      |
-| 1         | 
+The bits in fpcw.EXCEPT and fpcw.EMASK are set corresponding to the following numbered floating-point exceptions (IE. if the 0th exception is raised, then bit 8 of fpcw is set, and if the 5th exception is masked, then bit 19 of fpcw is set):
+| Exception | Name      | Description                      |
+|-----------|-----------|----------------------------------|
+| 0         | INVALID   | Invalid/Undefined Operation      |
+| 1         | DIVBYZERO | Division by +/-0.0               |
+| 2         | OVERFLOW  | Operation Overflowed to +/-Inf   |
+| 3         | UNDERFLOW | Operation Underflowed to +/-0.0  |
+| 4         | INEXACT   | Operation produced inexact result|
+| 5         | SIGNAL    | An operation was performed on an sNaN |
 
 
+### Startup
+
+During startup, the fpcw is set as follows:
+* RND is set to 4
+* DENORM is set
+* All exceptions are not asserted
+* All exceptions are masked
+* All other bits are zero
+
+All FP registers have undefined values during startup.
 
 ## Instructions
 
@@ -95,12 +109,23 @@ Exceptions:
 - PROT, if the target address is out of range for the PTL mode.
 - PF, if a memory operand accesses an unavailable virtual memory address
 - PROT, If opcodes 0x01b or 0x01f are used to load a value other than 0 into a reserved or unavailable register.
+- PROT, if any operation results in an unmasked floating point exception and cr0.FPEXCEPT is clear
+- FPE, if any operation results in an unmasked floating point exception, and cr0.FPEXCEPT is set
+
+Floating Point Exceptions:
+- OVERFLOW: If an operand to opcode 0x022 or 0x023 is an integer or fixed-point value that is larger than the maximum value for the destination format
+- INEXACT: If an operand to opcode 0x022 or 0x023 is an integer or fixed-point value that cannot be exactly represented in the destination format
+- OVERFLOW: If an operand to opcode 0x024 or 0x025 is too large for the destination size, or is infinite.
+- OVERFLOW: If an operand to opcode 0x026 is too large for the destiniation format.
+- UNDERFLOW: If an operand to opcode 0x026 is too large for the destination format.
+- INEXACT: If an operand to opcode 0x026 cannot be exactly represented in the destination format.
+- SIGNAL: If the operand to opcode 0x024 or 0x025 is an sNaN
 
 Instructions:
 - 0x022 (movsif): Moves a signed integer value from the second operand into the first, converting it into a floating-point value.
 - 0x023 (movxf): Moves a fixed-point value from the second operand into the first, converting it into a fixed-point value.
 - 0x024 (movfsi): Moves a floating point value from the second operand into the first, truncating it into a signed integer value.
-- 0x024 (movfx): Moves a floating point value from the second operand into the first, converting it into a fixed-point value
+- 0x025 (movfx): Moves a floating point value from the second operand into the first, converting it into a fixed-point value
 - 0x026 (cvtf): Moves a floating-point value from the second operand into the first, converting it to the size of the destination operand.
 
 floating-point moves use the size of the floating-point operand to determine the format. 
@@ -117,7 +142,7 @@ All memory accesses are performed atomically. Note that the entire operation is 
 Opcodes: 0x100-0x129
 Operands: Opcodes 0x100-0x11F, 1. Opcodes 0x120-0x127, 2. Opcodes 0x128-0x129, 3.
 
-h: Opcodes 0x11e and 0x124 all bits shall be zero. All other opcodes, `[00 0f]` where if `f` is set, `flags` is not modified.
+h: Opcodes 0x11e and 0x124 `[00 g0]`, where if `g` is set, comparisons involving NaN are inverted. All other opcodes, `[00 0f]` where if `f` is set, `flags` is not modified.
 
 Operand Constraints: The first operand shall be a floating-point register, or a memory reference. 
 At least one operand shall be a floating-point register. No operand shall be a direct register, other than a floating-point register.
@@ -132,11 +157,17 @@ Exceptions:
 - PF, if paging is disable, and the target address is an out of range physical address
 - PROT, if the target address is out of range for the PTL mode.
 - PF, if a memory operand accesses an unavailable virtual memory address
-- PROT, if quiet floating-point errors are not enabled, cr0.FPEXCEPT=0, and an exception would otherwise raise FPE.
-- FPE, if quiet floating point errors are not enabled, and any operation causes an IEEE 754 error
-- FPE, if quiet floating point errors are not enable, and an operand is an sNaN.
+- PROT, if any operation results in an unmasked floating point exception and cr0.FPEXCEPT is clear
+- FPE, if any operation results in an unmasked floating point exception, and cr0.FPEXCEPT is set
 
-Flags: If `f` is not set in `h`, `M` and `Z` are set according to the result. Opcodes 0x11e and 0x124, `C` and `V` are also set according to the result.
+Floating Point Exceptions:
+- INVALID: If an operand to an instruction is outside of it's domain
+- OVERFLOW: If an operation produces a value that is too large for the destination format
+- UNDERFLOW: If an operation produces a value that is too small for the destination format
+- INEXACT: If an operation with a rational result produces a value that cannot be exactly represented in the destiniation format.
+- INEXACT: If the operation is performed with greater precision 
+
+Flags: If `f` is not set in `h`, `N`, `Z`, and `P` are set according to the result. Opcodes 0x11e and 0x124, `V` is also set according to the result.
 
 Instructions:
 - 0x100 (exp): Computes exp(x) of the operand, and stores the result in the operand.
@@ -169,7 +200,7 @@ Instructions:
 - 0x11b (fabs): Computes the absolute value of the operand, and stores the result in the operand.
 - 0x11c (fneg): Negates the operand, and stores the result in the operand
 - 0x11d (finv): Calculates the multiplicative inverse of the operand
-- 0x11e (fcmpz): Compares the floating point operand with 0, and sets flags according to the comparison. 
+- 0x11e (fcmpz): Compares the floating point operand with +0.0, and sets flags according to the comparison. 
 - 0x11f (erfc): Computes the 1.0-erf(x) of the operand, without loss of precision, and stores the result in the operand.
 - 0x120 (fadd): Adds the second operand to the first.
 - 0x121 (fsub): Subtracts the second operand operand from the first.
@@ -182,17 +213,28 @@ Instructions:
 - 0x128 (fma): Multiplies the first operand by the second, and adds the third as though with infinite intermediate precision, storing the result in the first.
 - 0x129 (hypot3): Computes the hypotenuse of the three operands and stores the result in teh first.
 
-All floating-point operations described within this section shall be performed to within 0.5 ULPs of the exact value. No other requirements are imposed on instructions in this section.
+If any operand is a NaN, the result is a qNaN. This does not cause INVALID exceptions to occur.
 
-fcmp (0x124) and fcmpz (0x) sets flags as follows: 
-If any operand 
-If the first operand is less than the other, sets `V` to `N`, otherwise sets `V` to `~N`.
-If the second operand is equal to the other, sets `Z`, otherwise clears `Z`.
+All floating-point operations described within this section shall be performed to within 0.5 ULPs of the exact value. 
+
+Handling of the Z flag for floating-point operations is on the logical value of the operation, rather than the bitwise value (like for integer operations). Both + and - 0.0 in results set the Z flag.
+
+The `g` bit in `h` affects the value of the `V` flag when comparing NaNs. If any operand to `fcmp` or `fcmpz` is NaN, then `V` is set to the value of `N` if `g` is set, and is set to the inverse of `N` if `g` is clear.
+
+If either operand is NaN, the "sign" of the result is the same as the sign of the NaN. If both operands are NaN, the sign is negative if either sign is negative. 
+
+There is no explicit hardware support for the total comparison predicate, the `cmp` instruction may be used for this purpose. 
+Likewise, there is no hardware support for an unordered comparison result - a comparison that returns an optional tridirectional result would need to handle NaNs explicitly.
 
 
+For instructions with more than 1 operand, the size of the largest operand is used to compute the result, and the result is then converted into the destination format. This may cause OVERFLOW, UNDERFLOW, or INEXACT errors.
+
+If an operation produces a NaN result, it is unspecified what NaN is produced, except that any operation on a qNaN or sNaN shall produce an qNaN. 
+
+The meaning of NaN representations is unspecified, except that the "canonical" values with only the most significant bit in the mantissa set with either sign, shall be quiet.
 
 ## Exceptions
 
-Exception 6 (FPE) shall be raised when a floating-point operation causes a floating-point exception or is performed on a signalling NaN value, while flags.FPQ=0, and cr0.FPEXCEPT=1. The error shall be present in flags.FPEXCPT.
+Exception 6 (FPE) shall be raised when a floating-point operation causes an unmasked floating-point exception, while flags.FPQ=0, and cr0.FPEXCEPT=1. The error shall be present in flags.FPEXCPT.
 
 If cr0.FPEXCEPT=1, then PROT shall be raised instead of FPE.
