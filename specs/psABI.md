@@ -46,9 +46,36 @@ The Base/Underlying type for enums declared in C, and unscoped enums declared in
 
 If the implementation of this ABI defines a type `_Float16` or `__float16`, then it shall be represented according to the IEEE 754 standard, as a half-precision binary floating-point value. 
 
-### Stdlib types
+### Floating-point environment
 
-The fenv_t type is a typedef for `unsigned long`. 
+
+The fenv_t type is a typedef for `unsigned long`. The fexcept_t type is a typedef for `unsigned short`.
+
+The fegetenv function shall store the value of `fpcrw` in the `unsigned long` value pointed  to by it's parameter.
+The fesetenv function shall load the value of `fpcrw` from the `unsigned long` value pointed to by it's parameter.
+
+The constant values defined by `<fenv.h>` are as follows (taken from the tables used for fpcrw):
+```c
+#define FE_INVALID 1
+#define FE_DIVBYZERO 2
+#define FE_OVERFLOW 4
+#define FE_UNDERFLOW 8
+#define FE_INEXACT 16
+#define FE_SIGNAL 32
+
+#define FE_ALL_EXCEPT 63
+
+#define FE_UPWARD 0
+#define FE_DOWNWARD 1
+#define FE_TOWARDZERO 2 
+#define FE_TONEAREST_HALFUP 3
+#define FE_TONEAREST_HALFEVEN 4
+#define FE_TONEAREST 4
+```
+
+The bit fpcrw.EMASKALL shall be set when the program starts up, and shall not be cleared except by explicit request of the user, either by clearing the bit and installing the new value in the floating-point environment, or through some other platform-specific interface. The details of such an interface is not specified. 
+
+### Stdlib types
 
 The `jmp_buf` type shall be a typedef for `unsigned long[32]`
 
@@ -58,7 +85,8 @@ The `jmp_buf` type shall be a typedef for `unsigned long[32]`
 
 ### Registers
 
-The following registers shall be callee saved: `r6`, `r7`, `r12`, `r13`, `r14`, `r15`, `f6`, `f7`, `v32l` through `v63h`. 
+The following registers shall be callee saved: `r6`, `r7`, `r12`, `r13`, `r14`, `r15`, `fpcrw`, `f6`, `f7`, `v32l` through `v63h`. 
+
 
 All other registers are caller saved.
 

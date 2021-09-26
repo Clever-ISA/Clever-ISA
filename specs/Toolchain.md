@@ -5,7 +5,7 @@
 The architecture for the toolchain name should be `clever`, or clever followed by the publication version. 
 Toolchains should not generate code for an unpublished version of the clever ISA specification.
 
-The default vendor name for targets should be `unknown`
+The default vendor name for targets should be `unknown`, toolchains may accept target names for the clever processor with any vendor.
 
 ## Target Features
 
