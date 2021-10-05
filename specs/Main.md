@@ -884,7 +884,7 @@ The following behaviours are guaranteed to be maintained by future versions, inc
 - All defined registers, and their meanings.
 - Defined flags of flags, cr0, cpuex2.
 - Required values for initialization state.
-- The behaviour of accessing r63
+- The behaviour of accessing registers 63 and 255
 - The format of operands, except operands with any reserved bits set
 - The meaning of interrupts 16-63. 
 

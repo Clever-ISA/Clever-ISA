@@ -29,7 +29,7 @@ The following previously reserved registers are defined as part of this extensio
 
 | Number   | Register Name | Availability   |
 |----------|---------------|----------------|
-| 19       | fpcrw          | FPFLAGS        |
+| 19       | fpcrw         | FPFLAGS        |
 | 24       | f0            | FP             |
 | 25       | f1            | FP             |
 | 26       | f2            | FP             |
@@ -67,7 +67,7 @@ The value of fpcrw.RND is given as follows:
 | 3    | Half Up                        |
 | 4    | Half To Even                   |
 
-The bits in fpcw.EXCEPT and fpcw.EMASK are set corresponding to the following numbered floating-point exceptions (IE. if the 0th exception is raised, then bit 8 of fpcw is set, and if the 5th exception is masked, then bit 19 of fpcw is set):
+The bits in fpcrw.EXCEPT and fpcw.EMASK are set corresponding to the following numbered floating-point exceptions (IE. if the 0th exception is raised, then bit 8 of fpcrw is set, and if the 5th exception is masked, then bit 19 of fpcrw is set):
 | Exception | Name      | Description                      |
 |-----------|-----------|----------------------------------|
 | 0         | INVALID   | Invalid/Undefined Operation      |
@@ -271,14 +271,15 @@ Instructions:
 - 0x130 (fraiseexcept): Triggers an FPE if any unmasked floating-point exception is asserted
 - 0x131 (ftriggerexcept): Triggers and FPE if any unmasked floating-point except is asserted, ignoring the value of fpcrw.EMASKALL in determining masking.
 
-Opcode 0x131 (ftriggerexcept) acts as though fpcrw.EMASKALL is set to 0, even if it is set. It is the only instruction that can trigger an FPE with this bit set.
 
 
-## Exceptions
+## Floating Point Exceptions
 
 Exception 6 (FPE) shall be raised when a floating-point operation causes an unmasked floating-point exception and cr0.FPEXCEPT=1. 
 
-If cr0.FPEXCEPT=1, then PROT shall be raised instead of FPE.
+If cr0.FPEXCEPT=0, then PROT shall be raised instead of FPE.
+
+A floating-point exception is masked if fpcrw.EMASKALL is set or the corresponding bit in fpcrw.EMASK is set. Regardless of whether an exception is masked, the corresponding bit in fpcrw.EXCEPT is set when an instruction causes that exception. No instruction, other than an explicit write to fpcrw, clears any bit in fpcrw.EXCEPT.
 
 ## Stability
 
