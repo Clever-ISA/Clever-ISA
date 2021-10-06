@@ -40,7 +40,7 @@ A copy of the license is included in the repository, under the file entitled LIC
 | 14  | r14           | General        |                       Fast Indirect Call Address                        |
 | 15  | r15/link      | General        |                        Fast Call Return Address                         |
 | 16  | ip            | Readonly[^1]   |                           Instruction Pointer                           |
-| 17  | flags         | Flags          |                            Processor Status                             |                                                                    |
+| 17  | flags         | Flags          |                            Processor Status                             |
 | 63  | reserved      | Reserved       | Undefined register. Will not be given meaning in a future version |
 | 128 | cr0           | Supervisor     |                            Processor Control                            |
 | 129 | cr1/page      | Supervisor     |            Physical Address of the Virtual Memory Page Table            |
@@ -142,7 +142,6 @@ Not all bits of encoded operands are used. Any unused/reserved bits must be set 
 `[00 yyyy ss rrrrrrrr]`
 
 - ss is the size control value (log2(size) bytes).
-- xx is reserved and must be zero
 - yyyy is reserved and must be zero
 - rrrrrr is register value 0<=r<64
 
