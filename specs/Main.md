@@ -276,6 +276,7 @@ Instructions:
 - 0x009 (lea): Moves the computed address of the second operand into the first, without setting flags
 - 0x00a (mov*r*): Short form if the destination operand is a gpr (0<=r<16). Moves the operand into *r*, according to the size of the operand
 - 0x00b (mov*r*): Short form if the source operand is a gpr (0<=r<16). Moves *r* into the operand, according to the size of the operand.
+- 0x00c (lea*r*): Short form of lea if the destination operand is a gpr.
 
 If the destination operand of `mov` or `lea` is smaller than the result, the value stored is truncated. If the destination operand is larger than the result, the value stored is zero-extended to the destination size.
 All memory accesses are performed atomically, wrt. other memory accesses, and operations performed under a memory lock. 
