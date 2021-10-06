@@ -40,35 +40,36 @@ A copy of the license is included in the repository, under the file entitled LIC
 | 14  | r14           | General        |                       Fast Indirect Call Address                        |
 | 15  | r15/link      | General        |                        Fast Call Return Address                         |
 | 16  | ip            | Readonly[^1]   |                           Instruction Pointer                           |
-| 17  | flags         | Flags          |                            Processor Status                             |                                                                       |
-| 32  | cr0           | Supervisor     |                            Processor Control                            |
-| 33  | cr1/page      | Supervisor     |            Physical Address of the Virtual Memory Page Table            |
-| 34  | cr2/flprotect | Supervisor     |                  Supervisor Write protected flag bits.                  |
-| 35  | cr3/scdp      | Supervisor     |                   Supervisor Call Destination Address                   |
-| 36  | cr4/scsp      | Supervisor     |                      Supervisor Call Stack Pointer                      |
-| 37  | cr5/sccr      | Supervisor     |                      Supervisor Call State Control                      |
-| 38  | cr6/itabp     | Supervisor     |                    Interrupt/Exception Table Pointer                    |
-| 39  | cr7/ciread    | Supervisor     | Bitflag of cpuinfo registers that can be read by program execution mode |
-| 40  | cpuidlo       | CPUInfo        |        Contains the low order 64 bits of the Processor ID String        |
-| 41  | cpuidhi       | CPUInfo        |        Contains the hi order 64-bits of the Processor ID String         |
-| 42  | cpuex2        | CPUInfo        |           Processor Extension Availability Field 2. See below           |
-| 43  | cpuex3        | CPUInfo        |     Processor Extension Availability Field 3. Contains the value 0      |
-| 44  | cpuex4        | CPUInfo        |     Processor Extension Availability Field 4. Contains the value 0      |
-| 45  | cpuex5        | CPUInfo        |     Processor Extension Availability Field 5. Contains the value 0      |
-| 46  | cpuex6        | CPUInfo        |     Processor Extension Availability Field 6. Contains the value 0      |
-| 47  | mscpuex       | CPUInfo        |        Machine Specific Processor Extension Availability Field.         |
-| 48  | cr8           | Reserved       |                                                                         |
-| 49  | cr9           | Reserved       |                                                                         |
-| 50  | cr10          | Reserved       |                                                                         |
-| 51  | cr11          | Reserved       |                                                                         |
-| 56  | msr0          | Supervisor[^3] |                  Machine Specific Control Register 0.                   |
-| 57  | msr1          | Supervisor[^3] |                  Machine Specific Control Register 1.                   |
-| 58  | msr2          | Supervisor[^3] |                  Machine Specific Control Register 2.                   |
-| 59  | msr3          | Supervisor[^3] |                  Machine Specific Control Register 3.                   |
-| 60  | msr4          | Supervisor[^3] |                  Machine Specific Control Register 4.                   |
-| 61  | msr5          | Supervisor[^3] |                  Machine Specific Control Register 5.                   |
-| 62  | msr6          | Supervisor[^3] |                  Machine Specific Control Register 6.                   |
-| 63  | undefined     | Reserved[^4]   |  Always reserved, and will not be given meaning in a future revision.   |
+| 17  | flags         | Flags          |                            Processor Status                             |                                                                    |
+| 63  | reserved      | Reserved       | Undefined register. Will not be given meaning in a future version |
+| 128 | cr0           | Supervisor     |                            Processor Control                            |
+| 129 | cr1/page      | Supervisor     |            Physical Address of the Virtual Memory Page Table            |
+| 130  | cr2/flprotect | Supervisor     |                  Supervisor Write protected flag bits.                  |
+| 131 | cr3/scdp      | Supervisor     |                   Supervisor Call Destination Address                   |
+| 132 | cr4/scsp      | Supervisor     |                      Supervisor Call Stack Pointer                      |
+| 133 | cr5/sccr      | Supervisor     |                      Supervisor Call State Control                      |
+| 134 | cr6/itabp     | Supervisor     |                    Interrupt/Exception Table Pointer                    |
+| 135 | cr7/ciread    | Supervisor     | Bitflag of cpuinfo registers that can be read by program execution mode |
+| 136 | cpuidlo       | CPUInfo        |        Contains the low order 64 bits of the Processor ID String        |
+| 137 | cpuidhi       | CPUInfo        |        Contains the hi order 64-bits of the Processor ID String         |
+| 138 | cpuex2        | CPUInfo        |           Processor Extension Availability Field 2. See below           |
+| 139 | cpuex3        | CPUInfo        |     Processor Extension Availability Field 3. Contains the value 0      |
+| 140 | cpuex4        | CPUInfo        |     Processor Extension Availability Field 4. Contains the value 0      |
+| 141 | cpuex5        | CPUInfo        |     Processor Extension Availability Field 5. Contains the value 0      |
+| 142 | cpuex6        | CPUInfo        |     Processor Extension Availability Field 6. Contains the value 0      |
+| 143 | mscpuex       | CPUInfo        |        Machine Specific Processor Extension Availability Field.         |
+| 144 | cr8           | Reserved       |                                                                         |
+| 145 | cr9           | Reserved       |                                                                         |
+| 146 | cr10          | Reserved       |                                                                         |
+| 147 | cr11          | Reserved       |                                                                         |
+| 148 | msr0          | Supervisor[^3] |                  Machine Specific Control Register 0.                   |
+| 149 | msr1          | Supervisor[^3] |                  Machine Specific Control Register 1.                   |
+| 150 | msr2          | Supervisor[^3] |                  Machine Specific Control Register 2.                   |
+| 151 | msr3          | Supervisor[^3] |                  Machine Specific Control Register 3.                   |
+| 152 | msr4          | Supervisor[^3] |                  Machine Specific Control Register 4.                   |
+| 153 | msr5          | Supervisor[^3] |                  Machine Specific Control Register 5.                   |
+| 154 | msr6          | Supervisor[^3] |                  Machine Specific Control Register 6.                   |
+| 255 | undefined     | Reserved[^4]   |  Always reserved, and will not be given meaning in a future revision.   |
 
 All unmentioned register numbers are reserved and have no name
 
@@ -92,7 +93,7 @@ flags Register bitfield:
 |2   | Overflow (V)| Set by arithmetic operations that cause signed overflow
 |3   | Negative (N)| Set by operations that have a negative result
 |4   | Parity (P\) | Set by operations that have a result with Odd Parity.
-|19  | Mode (XM)  | If clear, operating in supervisor mode, otherwise program execution mode. Cannot be written to from program execution mode, regardless of flprotect.
+|19  | Mode (XM)  | If clear, operating in supervisor mode, otherwise program execution mode. Cannot be written to.
 
 Any attempt to write to an unmentioned bit shall be ignored. 
 Bit 19 may be modified only by the interrupt/exception procedure or the supervisor call procedure (scall, opcode 0x7c6), and by the scret (opcode 0xfc8) and reti (opcode 0xfc9) instructions. All other writes to bit 19 shall be ignored.
@@ -138,7 +139,7 @@ Not all bits of encoded operands are used. Any unused/reserved bits must be set 
 
 ### Register Operand
 
-`[00 yyyy ss xx rrrrrr]`
+`[00 yyyy ss rrrrrrrr]`
 
 - ss is the size control value (log2(size) bytes).
 - xx is reserved and must be zero
