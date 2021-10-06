@@ -881,7 +881,6 @@ As handling PF will cause a page fault, ABRT will be triggered, which likewise c
 
 The following behaviours are guaranteed to be maintained by future versions, including extensions:
 - All instructions defined by this document, and all behaviours of those defined instructions, aside from exceptions
-- The reservation of instructions 0x7e0-0x7ff
 - All defined registers, and their meanings.
 - Defined flags of flags, cr0, cpuex2.
 - Required values for initialization state.
@@ -907,11 +906,12 @@ The following changes may be made without a corresponding flag:
 - Use of cr8, and cr9 as Supervisor registers. 
 
 The following changes are reserved to machine vendors:
-- Uses of registers 56 through 62.
+- Uses of registers 148 through 154.
 - Meanings of bits in mscpuex
 - Contents of all cpuinfo registers
 - Availability and behaviour of instructions 0xfe0-0xfff. 
 - The timing, latency, and throughput of any instructions
+- The reservation of instructions 0xfe0-0xfff
 
 ## Symbol Glossary
 
