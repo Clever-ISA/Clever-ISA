@@ -44,7 +44,7 @@ A copy of the license is included in the repository, under the file entitled LIC
 | 63  | reserved      | Reserved       | Undefined register. Will not be given meaning in a future version |
 | 128 | cr0           | Supervisor     |                            Processor Control                            |
 | 129 | cr1/page      | Supervisor     |            Physical Address of the Virtual Memory Page Table            |
-| 130  | cr2/flprotect | Supervisor     |                  Supervisor Write protected flag bits.                  |
+| 130 | cr2/flprotect | Supervisor     |                  Supervisor Write protected flag bits.                  |
 | 131 | cr3/scdp      | Supervisor     |                   Supervisor Call Destination Address                   |
 | 132 | cr4/scsp      | Supervisor     |                      Supervisor Call Stack Pointer                      |
 | 133 | cr5/sccr      | Supervisor     |                      Supervisor Call State Control                      |
