@@ -23,15 +23,15 @@ Vector registers have register class `VectorHalf`, and can be used in any instru
 
 ### Register Operands
 
-The structure of the direct register operand is changed to the following: `[000 yyy ss x rrrrrrr]`. The meaning of each indicated group of bits is the same as the original structure for the Main specification.
+The structure of the direct register operand is changed to the following: `[000 yyy ss rrrrrrrr]`. The meaning of each indicated group of bits is the same as the original structure for the Main specification.
 
-The notable changes are as follows: The third most significant bit (previously) reserved, is changed to be a control bit for register operands. `r` is expanded to be 7 bits to accommodate accessing vector registers as normal. 
+The notable changes are as follows: The third most significant bit (previously) reserved, is changed to be a control bit for register operands. 
 
 ### Vector Register Operands
 
-A new class of operand, modifying the Register operand structure is defined for use in vectorized instructions. The structure of vector register operands is the following `[001 y ssss xx 1 rrrrr]`
+A new class of operand, modifying the Register operand structure is defined for use in vectorized instructions. The structure of vector register operands is the following `[001 y ssss x 01 rrrrr]`
 
-Where: `y` and `xx` are reserved for future use, `ssss` is the extended size control value=`log2(size)`, and `1rrrrr` is the vector register number discarding the least significant bit. 
+Where: `y` and `x` are reserved for future use, `ssss` is the extended size control value=`log2(size)`, and `1rrrrr` is the vector register number discarding the least significant bit. 
 Vector Register Operands address pairs of vector registers, according to `rrrrr`: For example, rrrrr=00000 accesses `v0` and `v0h`. Non vector registers may not be address using this operand type, and 
 
 `ssss` may be at most `4`, though future extensions may permit values greater than 4.
