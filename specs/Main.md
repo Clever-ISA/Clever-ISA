@@ -507,6 +507,23 @@ Instructions:
 - 0x03d (lrot*r*): Specialization of lrot that operates on a gpr
 - 0x03e (rrot*r*): Specialization of rrot that operates on a gpr.
 
+### Unary Operations
+
+Opcodes: 0x040-0x043
+
+Operands: For opcodes 0x040 and 0x041, 1. For opcodes 0x042 and 0x43, 0.
+
+Operand Constraints: The operand must be a register or a memory reference. 
+
+h: For opcodes 0x040 and 0x041, `[l0 0f]` where if `f` is set, `flags` is not modified, and if `l` is set, the memory operation is performed under a memory lock. For opcodes 0x042 and 0x043 `[rrrr]` where `r` is the number of the gpr `(0<=r<16)` of the operand.
+
+Flags: Unless `f` is set in `h`, sets `M`, `Z`, and `P` according to the result of the operation.
+
+Instructions:
+- 0x040 (bnot): Performs a bitwise negation of the operand.
+- 0x041 (neg): Negates the signed integer value in the operand.
+- 0x042 (bnot*r*): Specialization of bnot that operands on a gpr.
+- 0x043 (neg*r*): Specialization of neg that operands on a gpr.
 
 ### Comparison Operations
 
