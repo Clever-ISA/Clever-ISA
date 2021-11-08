@@ -80,6 +80,7 @@ The bits in fpcrw.EXCEPT and fpcw.EMASK are set corresponding to the following n
 
 XOPSS shall be the `ss`-1 value which the maximum upper-bound extended precision for floating-point operations performed in hardware. The value `3` is reserved for future use. Performing a floating-point operation with this value set triggers UND.
 
+The values in floating-point registers are stored bitwise. An instruction that does not store a value in a floating-point register shall not modify the representation of the value. Operations that store bitwise values in floating-point registers shall not modify the representation of the value (for example, using `mov` to store a signalling NaN value in a floating-point register does not quiet or canonicalize the NaN representation). 
 
 ### Startup
 
@@ -217,13 +218,11 @@ Instructions:
 - 0x11b (fabs): Computes the absolute value of the operand, and stores the result in the operand.
 - 0x11c (fneg): Negates the operand, and stores the result in the operand
 - 0x11d (finv): Calculates the multiplicative inverse of the operand
-- 0x11e (fcmpz): Compares the floating point operand with +0.0, and sets flags according to the comparison. 
 - 0x11f (erfc): Computes the 1.0-erf(x) of the operand, without loss of precision, and stores the result in the operand.
 - 0x120 (fadd): Adds the second operand to the first.
 - 0x121 (fsub): Subtracts the second operand operand from the first.
 - 0x122 (fmul): Multiplies the first operand by the second.
 - 0x123 (fdiv): Divides the first operand by the second
-- 0x124 (fcmp): Compares two floating-point operands and sets flags according to the result
 - 0x125 (hypot): Computes the hypotenuse of the two operands and stores the result in the first.
 - 0x126 (atan2): Computes the arc tangent of the first operand, divided by the second, but use the sign of both operands to determine quadrent.
 - 0x127 (frem): Computes the remainder of the first operand, divided by the second, and stores the result in the first.
@@ -236,12 +235,8 @@ All floating-point operations described within this section shall be performed t
 
 Handling of the Z flag for floating-point operations is on the logical value of the operation, rather than the bitwise value (like for integer operations). Both + and - 0.0 in results set the Z flag. -0.0 in results also sets the `N` flag.
 
-The `g` bit in `h` affects the value of the `V` flag when comparing NaNs. If any operand to `fcmp` or `fcmpz` is NaN, then `V` is set to the value of `N` if `g` is set, and is set to the inverse of `N` if `g` is clear.
-
 If either operand is NaN, the "sign" of the result is the same as the sign of the NaN. If both operands are NaN, the sign is negative if either sign is negative. 
 
-There is no explicit hardware support for the total comparison predicate, the `cmp` instruction may be used for this purpose. 
-Likewise, there is no hardware support for an unordered comparison result - a comparison that returns an optional tridirectional result would need to handle NaNs explicitly.
 
 In computing the result, the size of the operand shall specify the minimum range and precision. If there is more than one operand, the largest operand specifies the minimum range and precision. If XOPSS is larger than the operand size, than the maximum range and precision for computing the result is given by XOPSS. A processor is not required to compute the result in the range and precision given by XOPSS. 
 The result is then converted to the destiniation format and stored in the destination operand. 
@@ -252,6 +247,42 @@ If the result is smaller than the minimum normal value of the format, then the r
 If an operation produces a NaN result, it is unspecified what NaN is produced, except that any operation on a qNaN or sNaN shall produce an qNaN. 
 
 The meaning of NaN representations is unspecified, except that the "canonical" values with only the most significant bit in the mantissa set with either sign, shall be quiet.
+
+### Floating-point comparions
+
+Opcodes: 0x11e, 0x124
+
+Operands: For opcode 0x11e, 1. For Opcode 0x124, 2.
+
+
+Operand Contraints: No operand shall be have size 1. 
+ For opcode 0x11e, the operand shall not be a register, other than a floating-point register. For opcode 0x124, at least one operand must be a floating-point register or a long immediate value and no operand shall be a register, other than a floating-point register. 
+
+h: 
+
+Flags: M, Z, C, and P are set according to the result. V is not modified.
+
+Floating-point Exceptions:
+- SIGNAL, if any operand is an sNaN
+
+Exceptions:
+- UND, if cr0.FPEN=0
+- UND, if an operand constraint is violated
+- UND, if fpcrw.XOPSS=3
+- PF, if the target address is an unavailable virtual memory address
+- PF, if page protections are violated by the access
+- PF, if paging is disable, and the target address is an out of range physical address
+- PROT, if the target address is out of range for the PTL mode.
+- PF, if a memory operand accesses an unavailable virtual memory address
+- FPE, if cr0.FPEXCEPT=1 and an unmasked floating-point exception occurs
+- PROT, if cr0.FPEXCEPT=0 and an unmasked floating-point exception occurs
+
+
+Instructions:
+- 0x11e (fcmpz): Performs partial-order floating-point comparison with the operand and +0.0
+- 0x124 (fcmp): Performs partial-order floating-point comparison with both operands
+
+For fcmpz, +0.0 is the first operand of the comparison.
 
 ### Trigger Previously Masked Floating-point Exceptions
 

@@ -6,6 +6,7 @@ This document uses encoding notation denoted by square brackets, with a sequence
 
 For Example, the encoding `[11 00 aa bb]` denotes an 8-bit value which starts with 2 `1` bits, followed by 2 `0` bits, then 2 bits called `a`, and 2 bits called `b`. The named groups of bits will have meaning assigned in the following paragraph. 
 
+Bits denoted by encoding notation occur in descending order of significance.
 
 Encodings that denote values longer than 8 bits are in Big-Endian (Most significant byte a lowest order address). 
 
