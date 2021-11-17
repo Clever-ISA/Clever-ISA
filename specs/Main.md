@@ -726,7 +726,7 @@ Instructions:
 
 Both opcodes 0x806 and 0x807 may be modified by opcodes 0x028 and 0x029 (repc and repi). If so, the operation is performed until the condition is satisifed.
 
-I/O Device Addresses are 64-bit values, which correspond to some identifier assigned to devices. The I/O Device Addresses from 0x0000-0xffff are reserved for use with this specification, future versions, and extensions thereof.
+I/O Device Addresses are 64-bit values, which correspond to some identifier assigned to devices. The I/O Device Addresses from 0x00000000-0xffffffff are reserved for use with this specification, future versions, and extensions thereof.
 All other device addresses have machine specific use
 
 ### Mass Register Storage
