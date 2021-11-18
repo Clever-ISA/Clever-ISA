@@ -9,7 +9,7 @@ In fixing such bugs, care will be taken to make the least disruptive changes, an
 
 Futher, it is guaranteed that, subject to the "Permitted Changes" section, the behaviour as prescribed by a published extension will not be modified by other extensions.
 
-Extensions that are to included in future publications will have a tracking issue filed with sufficient notice to the publication of that version and Reviewers will be notified to review the extension. 
+Extensions that are to be included in future publications will have a tracking issue filed with sufficient notice to the publication of that version and Reviewers will be notified to review the extension. 
 Additionally, community members, including but not limited to machine implementors, toolchain vendors, and supervisor developers, may comment on the proposed extension or may file issues related to the proposed extension up until publication.
 
 ### Future Extensions
@@ -24,9 +24,10 @@ Changes that affect supervisors and applications compiled against previous versi
 - Subsequent extensions cannot change the prescribed behaviour of any operation except for behaviour in the case of a prescribed exception, unless the supervisor or program opts-in to that change.
 - Subsequent extensions cannot change the prescribed floating-point exceptions of any instruction, unless the supervisor or program opts-in to that change.
 - Subsequent extensions cannot change the prescribed exceptions of any instruction performed from program execution mode, unless the supervisor opts-in to that change, but the prescribed exceptions of instructions performed from supervisor mode may be modified. 
-- The behaviour of accessing registers 63 and 255 may not be changed. 
-- The behaviour of instructions 0x000 and 0xfff may not be changed.
-- The definition of io addresses prescribed by this specification.
+    - In particular, the introduction of a new program instruction (opcode<0x800) is permitted with a supervisor opt-in. 
+- Subsequent extensions cannot change the behaviour of accessing registers 63 and 255. 
+- Subsequent extensions cannot change the behaviour of instructions 0x000 and 0xfff.
+- Subsequent extensions cannot change the definition of io addresses prescribed by this specification.
 
 Additionally, the following behaviours are considered reserved to the implementation, and may not be changed by extensions:
 - The behaviour and existance of instructions 0xfe0-0xfff, and instructions subsequently defined as "Machine Specific"
