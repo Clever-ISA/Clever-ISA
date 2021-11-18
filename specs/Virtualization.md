@@ -19,7 +19,7 @@ A CPU Indicates conformance to these extensions by setting bit 12 (VIRT) of cpue
 
 This document describes supervisors (flags.XM=0) as executing in one of two further modes:
 - Unmanaged Supervisor Mode which is the default, and
-- Managed Supervisor Mode, which indicates the prescene of a hypervisor
+- Managed Supervisor Mode, which indicates the presence of a hypervisor
 
 Supervisors need not indicate support for this extension, and any previously valid code is valid in both Unmanaged and Managed Mode, except that io addresses defined by the spec may be modified by the hypervisor in Managed Mode.
 
