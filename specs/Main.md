@@ -615,9 +615,9 @@ cc value | Name       | Condition
  6       | Below or Eq| flags.C=1 or flags.Z=1
  7       | Minus      | flags.N=1
  8       | Plus       | flags.N=0
- 9       | Above or Eq| flags.C=0 or flags.Z=1
- 10      | Greater/Eq | flags.N=flags.V or flags.Z=1
- 11      | Greater    | flags.N=flags.V
+ 9       | Above      | flags.C=0 and flags.Z=0
+ 10      | Greater    | flags.N=flags.V and flags.Z=0
+ 11      | Greater/Eq | flags.N=flags.V
  12      | Not Zero/Eq| flags.Z=0
  13      | No Overflow| flags.V=0
  14      | No Carry   | flags.C=0
