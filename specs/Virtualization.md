@@ -164,7 +164,9 @@ hret has dual purpose: It can also be used to return to a managed supervisor fro
 
 Neither hret or hresume may be used to transfer control to a virtual machine that has RESET. Rather, the virtual machine must be disposed of with vmstop, and a new virtual machine created if the hypervisor wishes to resume or reset such a virtual machine. 
 
-If the vm context identifier was obtained from a virtual machine
+If the vm context identifier was obtained from a virtual machine that RESET, neither hret nor hresume can be used to transfer control back to it. 
+
+neither hret nor hresume consistute a branch within the virtual machine for the purposes of instruction execution coherence unless the `ip` register is modified prior to returning (however, an explicit hcall does, as does any interrupt resumed by the hresume instruction). 
 
 ### Virtual Machine Creation
 

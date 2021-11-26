@@ -187,6 +187,23 @@ Such bits may be used in future revisions of this document, or extensions.
 Opcode:
 `[oooooooooooo hhhh]`: `o` is the 12-bit opcode, and `hhhh` is used for instruction specific information.
 
+## Memory Model
+
+When performing reads and writes to memory, machines with multiple CPUs perform each memory access atomically, and in a way that ensures that locally well-ordered operations are realtively well-ordered with other CPUs and with interrupt/exception handlers. In particular any write that occurs on a CPU shall make visible to all other CPUs that read the value written the value of all previous stores (note: this is intended to be consistent with the "release" ordering of the C++20 Memory Model, with reads acting as acquire operations).
+Interrupts other than exceptions shall not intervene between two parts of any single memory access, but may interrupt the following instructions during execution:
+- halt
+- Any operation with a repc or rep*cc* prefix, as long as an individual instruction has completely fully
+
+Further, if a memory access would cause an exception, the observable behaviour of that instruction shall be as-if the entire memory access did not occur, even if part of it could be performed without an exception (for example, if a multibyte memory access crosses a page boundary into a not present page, or exceeds the virtual or physical address constraints). 
+Additionally, if an instruction causes an exception, the observable behaviour of that instruction shall be as-if no write was performed (Note: it is permissible that the instruction read any memory reference partially or completely before raising the exception). 
+
+Instructions executed by the program fetched from `ip`, as well as operands fetched for that execution, are exempt from the above rules. If instructions a CPU executes modifies memory concurrently being executed by a different CPU, the results of those writes, whether the writes are obseved completely (tearing), and the timing of those writes are unspecified. It is ensured that undefined results do not occur.
+Additionally, writes from within a CPU to the instruction stream executed by that CPU are not guaranteed to be reflected until that CPU either executes a iflush or flall instruction, or executes a branch instruction that is taken. However, it is guaranteed that if any write from a particular is observed to a particular instruction opcodes or operand, then the entire write is observed by that particular instruction opcode or operand (that is, it does not tear within a particular instruction word), but a partial write may be observed accross instruction opcodes or operands. 
+The fetching of entire immediate values, reguardless of size, also applies the same rules.
+
+
+Certain instructions are reffered to as being totally atomic (for example, instruction 0x200, and instructions with the `l` bit set in `h`). These instructions perform a read-modify-write on destination if it is a memory operand (otherwise, if the destination is a register, then it is equivalent to merely reading the source operand). The entire instruction acts as though it is a single memory operation that is both a read and a write, and no write on a different thread of execution occurs between the read of the destination operand and the write of the result to that operand. 
+
 
 ## Program Instructions
 
@@ -239,7 +256,7 @@ Instructions:
 
 ### Multiplication and Division Instructions
 
-Opcodes: 0x006-0x007
+Opcodes: 0x006-0x007, 0x040, 0x048
 Operands: None
 
 h: `[ss wf]`, where `ss` is log2(size) of the operation, as though for a register operand size control. `w` shall be set only for opcode 0x007. If `f` is set, then `flags` is not modified. 
@@ -250,6 +267,8 @@ Flags: Sets C, M, V, and Z according to the result of the operation if the `f` b
 Instructions:
 - 0x006 (mul): Multiplies r0 and r3, storing the low order bits in r0, and the high order bits in r3.
 - 0x007 (div): Divides r0 by r3, storing the quotient in r0 and the remainder in r3. If w is set in h, then the dividend has double the size specified by ss, and the high order bits are present in r1.
+- 0x040 (imul): Performs signed multiplication of r0 and r3, storing the low order bits in r0 and the high order bits in r3
+- 0x048 (idiv): Performs signed division between r0 and r3, storing the quotient in r0 and the remainder in r3. If w is set in h, then the divend has double the size specified by ss, and  the high order bits are present in r1.
 
 ### Register Manipulation Instructions
 
@@ -347,6 +366,22 @@ Opcode 0x7c7 performs the following operations, ignoring flags.XM and register p
 - `ip` is pushed onto the stack
 - `ip` is loaded from `itab[inum].ip`
 
+### No Operation
+
+Opcodes: 0x010-0x012
+
+Operands: Opcode 0x010, 0. Opcode 0x011, 1. Opcode 0x012, 2.
+
+h: Unused
+
+Exceptions: None
+
+Operations:
+- 0x010 (nop): Performs no operation.
+- 0x011-0x012 (nop): Performs no operation further than decoding and validating each operand.
+
+Machines should ensure consistent timing for each no-op instruction, but this timing is not specified. 
+
 ### Stack Manipulation
 
 Opcodes: 0x014-0x017
@@ -410,10 +445,10 @@ If the operand to `ldgpr` or `ldar` is an indirect register, the address to load
 
 ### Converting Moves
 
-Opcodes: 0x020-0x027
+Opcodes: 0x020-0x021
 Operands: 2
 
-h: For opcodes 0x020-0x021 `[00 0f]`where if `f` is set `flags` is not modified.
+h: `[00 0f]`where if `f` is set `flags` is not modified.
 
 Operand Constraints: For opcode 0x020 and 0x021, at least one operand shall be a register. 
 
@@ -436,8 +471,6 @@ Instructions:
 - 0x020 (movsx): Moves a signed integer operand from the second operand, to the first. If the second operand is smaller than the first, the highest bit is copied to each higher bit in the first operand.
 - 0x021 (bswap): Moves the second operand into the first, swapping the order of the bytes stored. 
 
-
-All memory accesses are performed atomically. Note that the entire operation is not required to be atomic.
 
 ### Block Operations
 
@@ -468,6 +501,7 @@ Instructions:
 
 Each Load and each Store operation performed by these instructions are atomic wrt. other memory accesses and memory operations performed under a memory lock. If repi or repc are used, note that each operation is individual. 
 
+block operations being performed by repbi or repbc may be interrupted by non-exception hardware interrupts, between the full completion of one operation and the execution of the following operation being repeated. If the instruction has not completed then the return instruction pointer saved by the interrupt shall point to the instruction, otherwise to the subsequent instruction. The full completion of the operation includes performing the prescribed repeated instruction, decrementing `r1` (for repbc) and testing the condition for the next iteration.
 
 ### Integer Shifts
 
@@ -510,9 +544,9 @@ Instructions:
 
 ### Unary Operations
 
-Opcodes: 0x040-0x043
+Opcodes: 0x046-0x047, 0x4E-0x4F
 
-Operands: For opcodes 0x040 and 0x041, 1. For opcodes 0x042 and 0x43, 0.
+Operands: For opcodes 0x040 and 0x041, 1. For opcodes 0x048 and 0x049, 0.
 
 Operand Constraints: The operand must be a register or a memory reference. 
 
@@ -520,11 +554,54 @@ h: For opcodes 0x040 and 0x041, `[l0 0f]` where if `f` is set, `flags` is not mo
 
 Flags: Unless `f` is set in `h`, sets `M`, `Z`, and `P` according to the result of the operation.
 
+Exceptions: 
+- UND, if any operand constraint is violated. 
+- UND, if a reserved register is accessed by the instruction
+- PROT, if a Supervisor register is accessed, and the program is not in Program Execution Mode
+- UND, if the destination operand is the flags or ip register.
+- PF, if a memory operand accesses an unavailable virtual memory address
+- PF, if the first operand is a memory operand, and page protections are violated by the access
+- PF, if paging is disable, and a memory operand accesses an out of range physical address
+- PROT, if a memory operand is out of range for the PTL mode.
+
 Instructions:
-- 0x040 (bnot): Performs a bitwise negation of the operand.
-- 0x041 (neg): Negates the signed integer value in the operand.
-- 0x042 (bnot*r*): Specialization of bnot that operands on a gpr.
-- 0x043 (neg*r*): Specialization of neg that operands on a gpr.
+- 0x046 (bnot): Performs a bitwise negation of the operand.
+- 0x047 (neg): Negates the signed integer value in the operand.
+- 0x04E (bnot*r*): Specialization of bnot that operands on a gpr.
+- 0x04F (neg*r*): Specialization of neg that operands on a gpr.
+
+### Arithmetic/Logic Instruction GPR Specializations
+
+Opcodes: 0x041-0x045, 0x49-0x4D
+
+Operands: 1
+
+Operand Constraints: Opcodes 0x04A-0x04A, operand must be a register or a memory reference. 
+
+h: `[rrrr]` where `r` is the number of the gpr `(0<=r<16)` of the destination (Opcodes 0x042-0x046) or source (Opcodes 0x04A-0x04E) operand.
+
+Exceptions: 
+- UND, if any operand constraint is violated. 
+- UND, if a reserved register is accessed by the instruction
+- PROT, if a Supervisor register is accessed, and the program is not in Program Execution Mode
+- UND, if the destination operand is the flags or ip register.
+- PF, if a memory operand accesses an unavailable virtual memory address
+- PF, if the first operand is a memory operand, and page protections are violated by the access
+- PF, if paging is disable, and a memory operand accesses an out of range physical address
+- PROT, if a memory operand is out of range for the PTL mode.
+
+
+Instructions: 
+- 0x041 (add*r*): Specialization of opcode 0x001 (add) where the destination operand is a gpr
+- 0x042 (sub*r*): Specialization of opcode 0x002 (sub) where the destination operand is a gpr
+- 0x043 (and*r*): Specialization of opcode 0x003 (and) where the destination operand is a gpr
+- 0x044 (or*r*):  Specialization of opcode 0x004 (or) where the destination operand is a gpr
+- 0x045 (xor*r*): Specialization of opcode 0x005 (xor) where the destination operand is a gpr
+- 0x049 (add*r*): Specialization of opcode 0x001 (add) where the second operand is a gpr
+- 0x04A (sub*r*): Specialization of opcode 0x002 (sub) where the second operand is a gpr
+- 0x04B (and*r*): Specialization of opcode 0x003 (and) where the second operand is a gpr
+- 0x04C (or*r*):  Specialization of opcode 0x004 (or) where the second operand is a gpr
+- 0x04D (xor*r*): Specialization of opcode 0x005 (xor) where the second operand is a gpr
 
 ### Comparison Operations
 
@@ -575,7 +652,7 @@ Instructions:
 - 0x203 (fence): Synchronizes memory accesses across cpus. Immediately before the instruction is executed, all memory operations performed on the current cpu by prior instructions shall be completed, and no new memory accesses performed on the current cpu by subsequent instructions shall begin until the instruction completes. All fence instructions on all cpus shall occur in some total order.
 
 All operations described in this section are totally atomic.
-wcmpxchg exists to permit efficient implementations which can be made use of when reliable success is not necessary.
+wcmpxchg exists to permit efficient implementations which can be made use of when reliable success is not necessary. Both cmpxchg and wcmpxchg act as though they always write to the destination
 
 The `fence` instruction is analogous to the C++11 function `std::atomic_thread_fence`, called with `std::memory_order_seq_cst`.
 
@@ -683,8 +760,9 @@ Exceptions:
 - PROT, if flags.XM=1
 
 Instruction:
-- ceases processor execution until an interrupt occurs or RESET
+- ceases processor execution 
 
+The halt instruction may be interrupted. The saved instruction pointer is the following instruction. Interrupting this instruction resumes processor execution.
 
 ### Clear Caches
 
@@ -893,6 +971,8 @@ All flag bits in the `page` register are reserved and must be zero. Attempting t
 
 Note: If the value of `page` is changed, such that any reserved bit is set, the above check is not performed, and PF will be triggered on the first memory access, which is likely the first following instruction fetch. 
 As handling PF will cause a page fault, ABRT will be triggered, which likewise cannot be handled, and the processor will reset. 
+
+When modifying the value of the `page` register or modifying `cr0.PG`, the behaviour is undefined if the page the instruction pointer resides in reflects a different physical memory address, or if any subsequent page from which instructions are fetched changes in such a way until an intervening taken branch occurs (note: this means that enabling or disabling paging requires the current page to be identity mapped). Changing the `page` register or modifying `cr0.PG` has the same effect as the `dflush` instruction followed by the `ptlbf`
 
 
 ## Additions
