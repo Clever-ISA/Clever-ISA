@@ -197,12 +197,18 @@ Interrupts other than exceptions shall not intervene between two parts of any si
 Further, if a memory access would cause an exception, the observable behaviour of that instruction shall be as-if the entire memory access did not occur, even if part of it could be performed without an exception (for example, if a multibyte memory access crosses a page boundary into a not present page, or exceeds the virtual or physical address constraints). 
 Additionally, if an instruction causes an exception, the observable behaviour of that instruction shall be as-if no write was performed (Note: it is permissible that the instruction read any memory reference partially or completely before raising the exception). 
 
+Certain instructions are reffered to as being totally atomic (for example, instruction 0x200, and instructions with the `l` bit set in `h`). These instructions perform a read-modify-write on destination if it is a memory operand (otherwise, if the destination is a register, then it is equivalent to merely reading the source operand). The entire instruction acts as though it is a single memory operation that is both a read and a write, and no write on a different thread of execution occurs between the read of the destination operand and the write of the result to that operand. 
+
+### Execution Memory Model
+
 Instructions executed by the program fetched from `ip`, as well as operands fetched for that execution, are exempt from the above rules. If instructions a CPU executes modifies memory concurrently being executed by a different CPU, the results of those writes, whether the writes are obseved completely (tearing), and the timing of those writes are unspecified. It is ensured that undefined results do not occur.
 Additionally, writes from within a CPU to the instruction stream executed by that CPU are not guaranteed to be reflected until that CPU either executes a iflush or flall instruction, or executes a branch instruction that is taken. However, it is guaranteed that if any write from a particular is observed to a particular instruction opcodes or operand, then the entire write is observed by that particular instruction opcode or operand (that is, it does not tear within a particular instruction word), but a partial write may be observed accross instruction opcodes or operands. 
 The fetching of entire immediate values, reguardless of size, also applies the same rules.
 
+Each discrete element of the instruction stream is a multiple of two bytes. These elements, and thus the value of the `ip` register, is aligned to 2 bytes. 
+The target of any branch, direct or indirect, including implicit branches (such as the `ret`, `iret`, `scret` instructions) and asynchronous branches (ie. for exception/hardware interrupt handlers), must be an address that's a multiple of two. Failing this requirement triggers the XA (Execution Alignment) Exception. 
+Other address constraints apply. Additionally, when virtual addressing is used, any page from which any instruction opcode, operand, or immediate value is fetched must be executable. A page is not executable if it has the NX bit set, or has the SXP bit set while in Supervisor Mode (flags.XM=0)
 
-Certain instructions are reffered to as being totally atomic (for example, instruction 0x200, and instructions with the `l` bit set in `h`). These instructions perform a read-modify-write on destination if it is a memory operand (otherwise, if the destination is a register, then it is equivalent to merely reading the source operand). The entire instruction acts as though it is a single memory operation that is both a read and a write, and no write on a different thread of execution occurs between the read of the destination operand and the write of the result to that operand. 
 
 
 ## Program Instructions
@@ -230,7 +236,7 @@ Tools generating code for this architecture can rely on these opcodes not being 
 Opcodes: 0x001-0x005.
 Operands: 2
 
-h: `[l0 0f]`. If `f` is set, then `flags` is not modified. If `l` is set, the memory operation is performed under a lock, and is atomic wrt. other memory operations, loads, and stores.
+h: `[l0 0f]`. If `f` is set, then `flags` is not modified. If `l` is set, the memory operation is totally atomic.
 
 
 Operand Constraints: At least one operand shall be an immediate value other than a memory reference, or shall be a gpr. The first operand shall be a register, indirect register, or memory reference. If l is set in `h`, then the first operand shall be an indirect register or a memory reference.
