@@ -207,7 +207,8 @@ The fetching of entire immediate values, reguardless of size, also applies the s
 
 Each discrete element of the instruction stream is a multiple of two bytes. These elements, and thus the value of the `ip` register, is aligned to 2 bytes. 
 The target of any branch, direct or indirect, including implicit branches (such as the `ret`, `iret`, `scret` instructions) and asynchronous branches (ie. for exception/hardware interrupt handlers), must be an address that's a multiple of two. Failing this requirement triggers the XA (Execution Alignment) Exception. 
-Other address constraints apply. Additionally, when virtual addressing is used, any page from which any instruction opcode, operand, or immediate value is fetched must be executable. A page is not executable if it has the NX bit set, or has the SXP bit set while in Supervisor Mode (flags.XM=0)
+Other address constraints apply. 
+
 
 
 
@@ -306,71 +307,6 @@ Instructions:
 
 If the destination operand of `mov` or `lea` is smaller than the result, the value stored is truncated. If the destination operand is larger than the result, the value stored is zero-extended to the destination size.
 All memory accesses are performed atomically, wrt. other memory accesses, and operations performed under a memory lock. 
-
-### Subroutines/Unconditional Jumps
-
-Opcodes: 0x7c0-0x7c5, 0x7c8-0x7c9
-Operand: For opcodes 0x7c0, 0x7c1, and 0x7c8, 1 ss immediate (not in Operand Form). 
-h: For opcodes 0x7c0, 0x7c1, and 0x7c8, `[ss i0]`, where ss is `log2(size)-1` in bytes, and if `i` is set, the signed (2s compliment) value is added to `ip` to obtain the actual address. For opcode 0x7c4, and 0x7c9, `rrrr`, where `r` is the gpr (0<=r<16) that contains the branch target address. For all other opcodes, shall be 0.
-
-
-Exceptions:
-- UND, if any operand constraint is violated.
-- UND, if a reserved register is accessed by the instruction
-- PROT, if a Supervisor register is accessed, and the program is not in Program Execution Mode
-- PROT, If `ss` is 3
-- PF, if the target address is an unavailable virtual memory address
-- PF, if page execution protections are violated by the access
-- PF, if paging is disable, and the target address is an out of range physical address
-- PROT, if the target address is out of range for the PTL mode.
-- PF, if a memory operand accesses an unavailable virtual memory address
-- PF, if paging is disable, and a memory operand accesses an out of range physical address
-- XA, if the jump address is not 2-byte aligned
-
-Instructions:
-- 0x7c0 (call): Performs a subroutine call to the immediate operand, pushing the return address to the stack. If `i` is set, the current value of `ip` is added to the signed immediate.
-- 0x7c1 (fcall): Performs a "fast" subroutine call to the immediate operand, storing the return address in `r15`. If `i` is set, the current value of `ip` is added to the signed immediate.
-- 0x7c2 (ret): Returns from a subroutine by popping the return address from the stack.
-- 0x7c3 (fret): Performs a "fast" subroutine return by restoring the return address in `r15`. 
-- 0x7c4 (icall): Performs an indirect call to address stored in the given register, pushing the return address to the stack.
-- 0x7c5 (ifcall): Performs a "fast" indirect call to the address stored in `r14`, storing the return value in `r15`.
-- 0x7c8 (jmp): Performs a jump to the immediate operand. If `i` is set, the current value of `ip` is added to the signed immediate
-- 0x7c9 (ijmp): Performs an indirect jmp to the address stored in the given register.
-
-### Supervisor Calls
-
-Opcodes: 0x7c6 (scall), 0x7c7 (int)
-
-Operands: None
-
-h: For opcode 0x7c6, Shall be 0. For opcode 0x7c7, inum-16. 
-
-Exceptions:
-- UND, if scdp is 0
-- PF, if the target address is an unavailable virtual memory address
-- PF, if page execution protections are violated by the access
-- PF, if paging is disable, and the target address is an out of range physical address
-- PROT, if the target address is out of range for the PTL mode.
-- PF, if a memory operand accesses an unavailable virtual memory address
-- PF, if paging is disable, and a memory operand accesses an out of range physical address
-- XA, if the destination address is not 2-byte aligned.
-
-Opcode 0x7c6 performs the following operations, ignoring flags.XM and register protection:
-- The value `sp` is copied into a temporary location, then `sp` is loaded from `scsp` if that value is nonzero
-- If `scsc.FRET=1`, the value copied from `sp` is stored to `r14`, otherwise it is pushed to the stack.
-- If `scsc.FRET=1`, the return address is stored in `r15`, otherwise it is pushed to the stack.
-- `flags` is stored in `r13` if scsc.RSTF=1
-- `flags.XM` is cleared
-- `ip` is loaded from `scdp`
-- Control Resumes from the new value of `ip`.
-
-Opcode 0x7c7 performs the following operations, ignoring flags.XM and register protection:
-- If `itab[inum].flags.PX` is clear, and `flags.XM=1`, then PROT is raised
-- Otherwise, the value `sp` is copied into a temporary location, then `sp` is loaded from `itab[inum].sp`
-- The copied value of `sp` is pushed onto the stack
-- `flags` is pushed onto the stack
-- `ip` is pushed onto the stack
-- `ip` is loaded from `itab[inum].ip`
 
 ### No Operation
 
@@ -664,28 +600,38 @@ The `fence` instruction is analogous to the C++11 function `std::atomic_thread_f
 
 ### Branches
 
-Opcodes: 0x700-0x73F and 0x780-0x78F
+Branch Instruction Encoding:  
+* `[0111 ss0r cccc wwww]`: Conditional Branches
+* `[0111 110r oooo hhhh]`: Unconditional branches
+* `[1111 110r oooo hhhh]`: Supervisor Branches
 
-Branch Instruction Encoding:
-`[0111 00ss cccc hhhh]`: `ss` is the log2(size)-1 of the signed branch offset, following the instruction. `hhhh` is a signed weight for the branch, with -8 being the most likely not to be taken, and 7 being the most likely to be taken (0 indicates roughly even probability). `cccc` is the encoding of the condition code for the branch.
-
-`[1111 1000 cccc rrrr]`: Indirect branch to a (general purpose) register `rrrr`. 
+Each branch instruction can cause the following exceptions
 
 Exceptions:
-- UND: If size is `16`.
-- PF, if the target address is an unavailable virtual memory address
-- PF, if page execution protections are violated by the access
-- PF, if paging is disable, and the target address is an out of range physical address
-- PROT, if the target address is out of range for the PTL mode.
-- PF, if a memory operand accesses an unavailable virtual memory address
-- PF, if paging is disable, and a memory operand accesses an out of range physical address
-- XA, if the destination address is not 2-byte aligned
+- XA: If the branch is taken, and the destination address is not well-aligned
+- PF: If paging is enabled, and the destination address is on a non-executable page
+- PF: If paging is enabled, the destination address is on a page with supervisor execution protection, and `flags.XM=0`
+- PF: If paging is enabled, and the destination address is an out-of-range virtual address
+- PF: If paging is disabled, and the destination address is an out-of-range physical address
+- 
 
-Instructions:
-- Opcodes 0x700-0x73F, if the condition indicated by *c* is satisfied, branches to `ip+imm`
-- Opcodes 0x780-0x78F, if the condition indicated by *c* is satisfied, branches to the address stored in `r`.
+Taking a conditional branch transfers control to destination if the condition is satisfied, and otherwise execution continues from the following instruction. 
+Immediately after the control transfer, `ip` will be equal to the desintation of the branch.
+When a branch is taken, modifications to memory are guaranteed to be reflected in the code that control is transfered to (including modifications to the page table, or modification of `cr0.PG`). 
+This also synchronizes-with modifications propagated by a `fence` instruction or a read-write synchronization edge from other CPUs. 
+The destination of a branch must be aligned to a multiple of two bytes. 
 
-#### Condition Code Encoding
+
+#### Conditional branches
+
+Encoding: `[0111 ss0r cccc wwww]`
+
+`ss` is the offset size control value (`log2(size)-1`) of the immediate value following the instruction, that indicates the destination of the branch.
+`r` is set if the destination is computed by adding `ip` to the signed immediate value following the instruction.
+`cccc` is the condition code, which determines when the branch is taken. See [Condition Code Encoding](#Condition-Code-Encoding). 
+`wwww` is the signed, 4-bit weight of the branch, which may be used by a branch predictor to determine the likelihood of the branch being taken, between -8 (least likely) and 7 (most likely).
+
+##### Condition Code Encoding
 
 cc value | Name       | Condition
 ---------|------------|---------------
@@ -706,35 +652,88 @@ cc value | Name       | Condition
  14      | No Carry   | flags.C=0
  15      | No Parity  | flags.P=0
 
+
+#### Unconditional Branches
+
+Encoding: `[0111 110r oooo hhhh]`
+
+`r` is set if the signed destination value is added to `ip`. May not be set for the following branch opcodes: 0x3, 0x4, 0x5.
+
+h: For branch opcodes 0x8 to 0x9, `[rrrr]`. 
+For branch opcodes 0x0-0x2, `[00 ss]` where `ss` is the `log2(size)-1` of the immediate value used for the destination. 
+For branch opcode 0x5. `[iiii]` where `i` is the software interrupt number.
+For all other branch opcodes, reserved and must be zero
+
+`oooo` is the branch opcode, given below.
+
+Instructions:
+- 0x0 (jmp): Unconditional normal branch.
+- 0x1 (call): Direct call, pushing the ip of the next instruction to the stack.
+- 0x2 (fcall): Direct call, storing the ip of the next instruction in r14.
+- 0x3 (ret): pops an 8-byte value from from the stack and branches to that address.
+- 0x4 (scall): Supervisor Call (See (Supervisor Call)[#Supervisor-Call])
+- 0x5 (int): Raises the software interrupt `iiii` (See (Software Interrupts)[#Software-Interrupts])
+- 0x8 (ijmp): Indirect normal branch to the destination.
+- 0x9 (icall): Indirect call to the destination, pushing the ip of the next instruction to the stack.
+- 0xA (ifcall): Indirect fast call to the address in r15, storing the ip of the next instruction in r14.
+
+##### Supervisor calls
+
+Opcode: 0x7c4
+
+Supervisor calls are the primary way to transfer control from program execution mode to a supervisor. The branch destiniation is given by the scdp supervisor register, and additional information form the scsp and sccr registers.
+
+The sccr register is a bitfield, with the following bits:
+
+| Bit   | Description |
+|-------|-------------|
+| 1 (fc)| Uses fast supervisor call ABI (note: clobbers r12, r13, and r14)|
+
+All other bits are reserved. Modifying such bits triggers UND
+
+
+Exceptions:
+- PROT: If `scdp` is `0`.
+- Other Branch Exceptions
+
+If `sccr.fc=1`, then a fast supervisor call is performed as follows:
+- `r7` is stored in `r12`, and, if scsp is not the value `0`, then scsp is stored in `r7`,
+- `flags` is stored in `r13`, then `flags.XM` is set to `0`,
+- the return address is stored in `r14`,
+- control is transfered to the absolute address in scdp.
+
+Otherwise, a stack supervisor call is performed as follows:
+- `r7` is stored in a temporary location designated `tmp`, then, if scsp is not the value `0`, then `scsp` is stored in `r7`,
+- The temporary location `tmp` is pushed to the stack,
+- `flags` is pushed to the stack, then `flags.XM` is set to `0`,
+- The return address is pushed to the stack,
+- control is transfered to the absolute address in scdp.
+
+
  
 ## Supervisor Instructions
 
 These instructions are available only to the supervisor. If executed when flags.XM=1, then PROT is raised. 
 
-### Supervisor/Interrupt Returns
+### Supervisor Branches
 
-Opcodes: 0xFC8-0xFC9
+Opcodes: 0xfc6-0xfc7
 Operands: None
 
 h: Shall be 0
 
 Exceptions:
-- PF, if the target address is an unavailable virtual memory address
-- PF, if page execution protections are violated by the access
-- PF, if paging is disable, and the target address is an out of range physical address
-- PROT, if the target address is out of range for the PTL mode.
-- PF, if a memory operand accesses an unavailable virtual memory address
-- PF, if paging is disable, and a memory operand accesses an out of range physical address
-- XA, if the destination address is not 2-byte aligned
+- Any branch exception
 
-Opcode 0xFC8 (scret) performs the following actions:
-- If `scsc.RSTF=1`, `flags` is loaded from `r13`
-- `flags.XM` is set 
-- If `scsc.FRET=1`, then `ip` is loaded from `r15`, otherwise `ip` is popped from the stack
-- If `scsc.FRET=1`, then `sp` is loaded from `r14`, otherwise `sp` is popped from the stack
-- Control resumes at `ip`
 
-Opcode 0xFC9 (reti) performs the following actions:
+Opcode 0xFC6 (scret) returns from a supervisor call. If sccr.fc is set, then the fast return procedure is used, as follows:
+- `ip` is loaded from `r14`,
+- `flags` is loaded from `r13`,
+- `r7` is loaded from r12,
+- Control is transfered to the address loaded into `ip`
+
+
+Opcode 0xFC7 (reti) performs the following actions:
 - `ip` is popped
 - `flags` is popped
 - `sp` is popped
@@ -743,7 +742,7 @@ Opcode 0xFC9 (reti) performs the following actions:
 
 ### Machine Specific Instructions
 
-Opcodes: 0xfe0-0xfff
+Opcodes: 0xfe0-0xffe
 Operands: Machine Specific
 
 h: Machine Specific
@@ -753,7 +752,7 @@ Exceptions:
 - PROT, if flags.XM=1
 - Any other Exception documented by the machine
 
-Instructions 0xfe0-0xfff are reserved for machine dependent behavior and will not be assigned further meaning in future ISA versions. Refer to machine specific documentation.
+Instructions 0xfe0-0xffe are reserved for machine dependent behavior and will not be assigned further meaning in future ISA versions. Refer to machine specific documentation.
 
 ### Halt
 
@@ -922,7 +921,9 @@ During initialization, all registers have undefined values, except:
 
 The memory at physical addreses 0x0000 through 0xffff shall be loaded in a machine-specific manner, all other memory addressess shall be 0. 
 
-## Address Space Size
+## Paging
+
+### Address Space Size
 
 All address spaces in the processor have a size, dictated by either cpuex2.PAS (for physical addresses), or cr0.PTL (for virtual addresses). 
 
@@ -978,7 +979,21 @@ All flag bits in the `page` register are reserved and must be zero. Attempting t
 Note: If the value of `page` is changed, such that any reserved bit is set, the above check is not performed, and PF will be triggered on the first memory access, which is likely the first following instruction fetch. 
 As handling PF will cause a page fault, ABRT will be triggered, which likewise cannot be handled, and the processor will reset. 
 
-When modifying the value of the `page` register or modifying `cr0.PG`, the behaviour is undefined if the page the instruction pointer resides in reflects a different physical memory address, or if any subsequent page from which instructions are fetched changes in such a way until an intervening taken branch occurs (note: this means that enabling or disabling paging requires the current page to be identity mapped). Changing the `page` register or modifying `cr0.PG` has the same effect as the `dflush` instruction followed by the `ptlbf`
+Changing the `page` register or modifying `cr0.PG` has the same effect as the `dflush` instruction followed by the `ptlbf`. 
+
+### Paging and Execution
+
+In virtual addressing mode, certain constraints apply to code being executed under most conditions. 
+When control is transfered into a page, or execution crosses a page boundery while fetching an opcode, operand structure, or immediate value, page permissions are checked. 
+Attempting to execute a not present page, a not executable page, or a page with supervisor execution protection enabled while `flags.XM=0`, causes a PF exception. 
+Likewise, exceeding the physical or virtual address limits likewise causes a PF exception. 
+These constraints are not guaranteed to be checked while continuous execution occurs within a particular page. Modifying the permissions of the current page being executed, or enabling/disabling paging, does not guarantee that an exception occurs unless one of the following occurs:
+* Execution reaches and crosses a page boundary (checks the permissions of that page),
+* a branch is taken (checks the permissions of the page the branch destination resides on)
+
+Notwithstanding the above, a PF exception *may* occur when virtual addressing is enabled or when page permissions are changed, such that the current page being executed violates the execution constraints.
+
+When paging is enabled or disabled, or the page table is modified, the behaviour is undefined unless the current page being executed and every following page until a taken branch occurs, is mapped to the same physical page which was previously being executed.
 
 
 ## Additions

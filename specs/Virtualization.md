@@ -106,7 +106,7 @@ reserved35 and reserved56 are reserved and must be set to zero. The behaviour is
 
 ### Call to Hypervisor Procedure
 
-Opcodes: 0xfc6 
+Opcodes: 0xfcb
 Operands: 0
 
 h: Reserved and Must be 0.
@@ -126,7 +126,7 @@ If a supervisor exception occurs, then the instruction is aborted. Exceptions wi
 If a hypervisor or unmanaged supervisor executes the instruction, it will directly recieve the UND Interrupt. 
 
 Operation:
-- 0xfc6 (hcall): If the CPU is in Managed Supervisor Mode, the values of each register are stored in the vmregs field for the virtual machine, then control is transfered to the hypervisor. ip is loaded from scdp and r7 is loaded from scsp. A vm context identifier is placed in r0, and the physical address of the vmcs is placed in r1. 
+- 0xfcb (hcall): If the CPU is in Managed Supervisor Mode, the values of each register are stored in the vmregs field for the virtual machine, then control is transfered to the hypervisor. ip is loaded from scdp and r7 is loaded from scsp. A vm context identifier is placed in r0, and the physical address of the vmcs is placed in r1. 
 
 The value of the vm context identifier is unspecified and has implementation-specific meaning and form, but the lower 32-bit is an identifier that uniquely identifies the virtual machine that executed the hcall instruction from all other active virtual machines within the hypervisor and is consistent in all control transfers from that particular virtual machine. A vm context identifier obtained from the hcall instruction does not signal a pending exception. 
 
@@ -135,7 +135,7 @@ The system call registers scdp and scsp are reused in the hypervisor for hypervi
 
 ### Return from Hypervisor Procedure Call
 
-Opcodes: 0xfd8-0xfd9
+Opcodes: 0xfd6-0xfd7
 Operands: 0
 
 h: Reserved and Must be 0.
@@ -156,8 +156,8 @@ Hypervisor Exceptions:
 No Hypervisor Exception occurs if the processor is not in Hypervisor mode. No Supervisor exception occurs if the processor is in Hypervisor Mode and a Hypervisor Exception occurs. 
 
 Operation:
-- 0xfd8 (hret): Transfers control back to virtual machine indicated by the vm context identifier in r0, loading the registers from the corresponding vm's vmcs.vmregs field and jumping to the address in `ip`. 
-- 0xfd9 (hresume): Same as hret, but if the vm context identifier signals a pending exception, control will be transfered to that exception
+- 0xfd6 (hret): Transfers control back to virtual machine indicated by the vm context identifier in r0, loading the registers from the corresponding vm's vmcs.vmregs field and jumping to the address in `ip`. 
+- 0xfd7 (hresume): Same as hret, but if the vm context identifier signals a pending exception, control will be transfered to that exception
 
 
 hret has dual purpose: It can also be used to return to a managed supervisor from an interrupt (either a trapped exception, or a hypervisor interrupt). If hret is used, preexisting exceptions are not signalled to the managed supervisor. If a trapped exception is desired to be propagated to the managed supervisor, the hresume instruction may be used instead, or the hypervisor can set up the registers and memory to perform the exception instead. As hret does not trigger an exception, any exception that occurs while executing the interrupt handler will not trigger an ABORT or RESET. 
