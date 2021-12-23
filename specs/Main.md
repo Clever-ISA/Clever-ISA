@@ -375,13 +375,13 @@ Exceptions:
 
 Instructions:
 - 0x018 (stogpr): Stores the value of each general purpose register (0<=r<16) to the memory operand.
-- 0x019 (stoar): Stores the value of each program register (0<=r<32) to the memory operand. Any reserved or unavailable floating-point register stores 0 instead.
+- 0x019 (stoar): Stores the value of each program register (0<=r<128) to the memory operand. Any reserved or unavailable floating-point register stores 0 instead.
 - 0x01a (rstogpr): Loads the value of each general purpose register (0<=r<16) from the memory operand. 
-- 0x01b (rstoar): Loads the value of each program register (0<=r<32), other than `ip`, from the memory operand. The value of any reserved or protected bit in `flags` is ignored in the memory region.
+- 0x01b (rstoar): Loads the value of each program register (0<=r<128), other than `ip`, from the memory operand. The value of any reserved register or protected bit in `flags` is ignored in the memory region.
 - 0x01c (pushgpr): Pushes the value of each general purpose register (0<=r<16) to the stack. Lower memory addresses (closer to the stack head) store lower numbered registers.
-- 0x01d (pushar): Pushes the value of each program register (0<=r<32) to the memory operand. Any reserved or unavailable register stores 0 instead. Lower memory addresses (closer to the stack head) store lower numbered registers.
+- 0x01d (pushar): Pushes the value of each program register (0<=r<128) to the memory operand. Any reserved or unavailable register stores 0 instead. Lower memory addresses (closer to the stack head) store lower numbered registers.
 - 0x01e (popgpr): Pops the value of each general purpose register from the stack.
-- 0x01f (popar): Pops the value of each program register (0<=r<32), other than `ip`, from the stack. The value of any reserved or protected bit in `flags` is ignored in the memory region.
+- 0x01f (popar): Pops the value of each program register (0<=r<128), other than `ip`, from the stack. The value of any reserved register or protected bit in `flags` is ignored in the memory region.
 
 If the operand to `ldgpr` or `ldar` is an indirect register, the address to load each register from is determined prior to performing the operation. `pushgpr` and `pushar` update the value of the stack pointer after it is stored, and `popgpr` and `popar` do not update the value of the stack pointer after restoring it. The entire memory operation shall be atomic.
 
