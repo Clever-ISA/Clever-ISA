@@ -270,12 +270,16 @@ h: `[ss wf]`, where `ss` is log2(size) of the operation, as though for a registe
 
 Flags: Sets C, M, V, and Z according to the result of the operation if the `f` bit is not set in `h`.
 
+Exceptions:
+- For Opcodes 0x007 and 0x040,
 
 Instructions:
 - 0x006 (mul): Multiplies r0 and r3, storing the low order bits in r0, and the high order bits in r3.
 - 0x007 (div): Divides r0 by r3, storing the quotient in r0 and the remainder in r3. If w is set in h, then the dividend has double the size specified by ss, and the high order bits are present in r1.
 - 0x040 (imul): Performs signed multiplication of r0 and r3, storing the low order bits in r0 and the high order bits in r3
 - 0x048 (idiv): Performs signed division between r0 and r3, storing the quotient in r0 and the remainder in r3. If w is set in h, then the divend has double the size specified by ss, and  the high order bits are present in r1.
+
+If the operand
 
 ### Register Manipulation Instructions
 

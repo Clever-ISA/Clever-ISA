@@ -52,13 +52,14 @@ An `ss` value of 3 may only be used with the `vmov` instruction, may not be pcre
 
 Opcode: 0x400
 Operands: One Instruction followed by it's operands
-h: `[00 ss]`, where `ss` is the size of each value operated on by the instruction.
+h: `[00 ss]`, where `ss` is the size of each vector element.
 
-Operand Constraints: At least one operand for the instruction following the prefix shall be a vector operand. For opcode 0x200, both operands shall be vector registers. For opcodes 0x201-0x202, the first two operands shall be vector registers and the third shall be an immediate value with size equal to the size control of both vector registers (An immediate value with size 16 is permitted)
+Operand Constraints: At least one operand for the instruction following the prefix shall be a vector operand. 
 
 Exceptions:
 - UND, if `cr0.VEC`=0.
 - UND, if the instruction following the prefix is invalid or undefined
+- UND, if any vector operand has a size less than the element size
 - UND, if an operand constraint is violated
 - Any exception that occurs while evaluating the intermediate instruction.
 
@@ -68,22 +69,20 @@ Instructions:
 Flags: Any prefixed instructions that modifies flags sets the M, Z, and P flags according to the whole value in the vector result. The C, and V flags are not modified by the vectorized instruction (Note: This is a defect. Later versions will provide a mechanism for determining when individual operations in a vectorized operation produces a carry or signed overflow)
 
  The following instructions may have a `vec` prefix:
- - Opcodes 0x001-0x007
+ - Opcodes 0x001-0x005
  - Opcodes 0x008-0x00b
  - Opcodes 0x020-0x027
  - Opcodes 0x030-0x036
  - Opcodes 0x038-0x03e
- - Opcodes 0x200-0x202
  - Opcodes 0x100-0x123
  - Opcodes 0x125-0x129
 
 Opcodes 0x008-0x00b and 0x020-0x027 operate on the provided scalar value, moving it into each vector element. 
-Opcodes 0x200-0x202 ignore the element sizes in the vec prefix size control. 
 
-If the destination is a vector register, with a size less than 16, only the elements matched by that size are affected by the operation. 
-See `vmov` for moving values between vectors
+If the destination is a vector register, with a size less than 16, only the elements matched by that size are affected by the operation. If
+See `vmov` for moving values between vectors.
 
-Exception for opcodes 0x201-0x202, if any source operand is not a vector operand, then the value is copied for each element of the vector (given by the vector register size control and the vector element size), then truncated or zero extended to the vector element size. The Resulting values are used by each operation performed under the vec prefix. For memory operands, memory is accessed exactly once.
+If any source operand is not a vector operand, then the value is copied for each element of the vector (given by the vector register size control and the vector element size), then truncated or zero extended to the vector element size. The Resulting values are used by each operation performed under the vec prefix. For memory operands, memory is accessed exactly once (and, in all cases, the access is atomic).
 If the destination operand (if any) is not a vector operand, then the operation is performed as a reduction. The operation is performed for each element of the vector, with that operand as the destination, and each vector element as the second operand (if there are two or more source operands, each are separated or copied as defined). The order in which the operations are performed is unspecified and may be non-deterministic. This may have suprising results if the instruction performs an operation that is not reorderable (such as floating-point operations, or `mov`). The intermediate values of the operation are not stored in the destination until each operation is performed fully (In particular, intermediate values are not truncated or zero-extended and do not undergo floating-point size conversion).
 
 [Note:
@@ -93,6 +92,10 @@ As a trivial example, it is unspecified whether `r0` contains 1, 2, 3, or 4 afte
     vec.i32 mov r0, v0
 ```
 ]
+
+If any operation performed under a vec prefix causes a floating-point exception, all other operations are completed, and the entire value is stored if the exception is masked (otherwise, no register or memory is modified), and all floating-point exceptions from all operations are indicated in `fpcw`, and then either `FP` or `PROT` occurs if any exception is unmasked. All other exception cases are checked *before* performing any operations.
+
+Opcodes 0x200-0x202, as well as any instruction that is modified by the `l` bit
 
 
 ## Vector Move
