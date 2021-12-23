@@ -58,7 +58,7 @@ Operand Constraints: At least one operand for the instruction following the pref
 
 Exceptions:
 - UND, if `cr0.VEC`=0.
-- UND, if the instruction following the prefix is invalid
+- UND, if the instruction following the prefix is invalid or undefined
 - UND, if an operand constraint is violated
 - Any exception that occurs while evaluating the intermediate instruction.
 
@@ -77,9 +77,23 @@ Flags: Any prefixed instructions that modifies flags sets the M, Z, and P flags 
  - Opcodes 0x100-0x123
  - Opcodes 0x125-0x129
 
-Opcodes 0x008-0x00b and 0x020-0x027 operate on the provided scalar value, moving it into each vector element. If the destination is a vector register, with a size less than 16, only the elements matched by that size are affected by the move. 
+Opcodes 0x008-0x00b and 0x020-0x027 operate on the provided scalar value, moving it into each vector element. 
 Opcodes 0x200-0x202 ignore the element sizes in the vec prefix size control. 
+
+If the destination is a vector register, with a size less than 16, only the elements matched by that size are affected by the operation. 
 See `vmov` for moving values between vectors
+
+Exception for opcodes 0x201-0x202, if any source operand is not a vector operand, then the value is copied for each element of the vector (given by the vector register size control and the vector element size), then truncated or zero extended to the vector element size. The Resulting values are used by each operation performed under the vec prefix. 
+If the destination operand (if any) is not a vector operand, then the operation is performed as a reduction. The operation is performed for each element of the vector, with that operand as the destination, and each vector element as the second operand (if there are two or more source operands, each are separated or copied as defined). The order in which the operations are performed is unspecified and may be non-deterministic. This may have suprising results if the instruction performs an operation that is not reorderable (such as floating-point operations, or `mov`). The intermediate values of the operation are not stored in the destination until each operation is performed fully (In particular, intermediate values are not truncated or zero-extended and do not undergo floating-point size conversion).
+
+[Note:
+As a trivial example, it is unspecified whether `r0` contains 1, 2, 3, or 4 after the following code:
+```
+    vmov v0, 0x00000001000000020000000300000004
+    vec.i32 mov r0, v0
+```
+]
+
 
 ## Vector Move
 
