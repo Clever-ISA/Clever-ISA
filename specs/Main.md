@@ -392,7 +392,7 @@ Operands: 2
 
 h: `[00 0f]`where if `f` is set `flags` is not modified.
 
-Operand Constraints: For opcode 0x020 and 0x021, at least one operand shall be a register. 
+Operand Constraints: For opcode 0x020 and 0x021, at least one operand shall be a register, and the first operand shall not be a immediate value other than a memory reference. For opcode 0x021, both operands shall have the same size, and the second operand shall not be a short immediate value.
 
 Flags: `M` and `Z` are set according to the result, unless `f` is set in `h`.
 
@@ -412,6 +412,8 @@ Exceptions:
 Instructions:
 - 0x020 (movsx): Moves a signed integer operand from the second operand, to the first. If the second operand is smaller than the first, the highest bit is copied to each higher bit in the first operand.
 - 0x021 (bswap): Moves the second operand into the first, swapping the order of the bytes stored. 
+
+
 
 
 ### Block Operations
