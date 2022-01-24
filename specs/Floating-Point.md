@@ -154,10 +154,10 @@ Overflow caused by `movfsi` and `movfx` yields the maximum (for positive inputs)
 
 ### Floating-point Arithmetic
 
-Opcodes: 0x100-0x129
-Operands: Opcodes 0x100-0x11F, 1. Opcodes 0x120-0x127, 2. Opcodes 0x128-0x129, 3.
+Opcodes: 0x116-0x118, 0x11B-0x11D, 0x120-0x123, 0x127, 0x128
+Operands: Opcodes 0x116-0x11D, 1. Opcodes 0x120-0x127, 2. Opcodes 0x128, 3.
 
-h: Opcodes 0x11e and 0x124 `[00 g0]`, where if `g` is set, comparisons involving NaN are inverted. All other opcodes, `[00 0f]` where if `f` is set, `flags` is not modified.
+h: All other opcodes, `[00 0f]` where if `f` is set, `flags` is not modified.
 
 Operand Constraints: The first operand shall be a floating-point register, or a memory reference. 
 At least one operand shall be a floating-point register. No operand shall be a direct register, other than a floating-point register.
@@ -185,49 +185,22 @@ Floating Point Exceptions:
 - UNDERFLOW: If the result would be a subnormal value and fpcrw.DENORM is clear.
 
 
-Flags: If `f` is not set in `h`, `N`, `Z`, and `P` are set according to the result. Opcodes 0x11e and 0x124, `V` is also set according to the result.
+Flags: If `f` is not set in `h`, `N`, `Z`, and `P` are set according to the result. 
 
 Instructions:
-- 0x100 (exp): Computes exp(x) of the operand, and stores the result in the operand.
-- 0x101 (ln): Computes ln(x) (the natural logarithm) of the operand, and stores the result in the operand
-- 0x102 (lg): Computes lg(x) (the base 2 logarithm) of the operand, and stores the result in the operand.
-- 0x103 (sin): Computes sin(x) of the operand, and stores the result in the operand.
-- 0x104 (cos): Computes cos(x) of the operand, and stores the result in the operand
-- 0x105 (tan): Computes tan(x) of the operand, and stores the result in the operand.
-- 0x106 (asin): Computes asin(x) of the operand, and stores the result in the operand.
-- 0x107 (acos): Computes acos(x) of the operand, and stores the result in the operand.
-- 0x108 (atan): Computes atan(x) of the operand, and stores the result in the operand.
-- 0x109 (sinh): Computes sinh(x) (the hyperbolic sin) of the operand, and stores the result in the operand.
-- 0x10a (cosh): Computes cosh(x) (the hyperbolic cos) of the operand, and stores the result in the operand.
-- 0x10b (tanh): Computes tanh(x) (the hyperbolic tan) of the operand, and stores the result in the operand.
-- 0x10c (asinh): Computes asinh(x) (the inverse hyperbolic sin) of the operand, and stores the result in the operand
-- 0x10d (acosh): Computes acosh(x) (the inverse hyperbolic cos) of the operand, and stores the result in the operand.
-- 0x10e (atanh): Computes atanh(x) (the inverse hyperbolic tan) of the operand, and stores the result in the operand.
-- 0x10f (exp2): Computes 2^x of the operand, and stores the result in the operand.
-- 0x110 (lgamma): Computes ln(Gamma(x)) of the operand, and stores the result in the operand.
-- 0x111 (tgamma): Computes Gamma(x) of the operand, and stores the result in the operand.
-- 0x112 (erf): Computes the erf(x) of the operand, and stores the result in the operand.
-- 0x113 (log10): Computes log10(x) (the base 10 logarithm) of the operand, and stores the result in the operand
-- 0x114 (lnp1): Computes ln(x+1) of the operand, and stores the result in the operand
-- 0x115 (expm1): Computes exp(x-1) of the operand, and stores the result in the operand.
+
 - 0x116 (round): Rounds the operand half-up and stores the result in the operand
 - 0x117 (ceil): Rounds the operand up and stores the result in the operand
 - 0x118 (floor): Rounds the operand down and stores the result in the operand
-- 0x119 (sqrt): Computes sqrt(x) of the operand, and stores the result in the operand.
-- 0x11a (cbrt): Computes cbrt(x) of the operand, and stores the result in the operand.
 - 0x11b (fabs): Computes the absolute value of the operand, and stores the result in the operand.
 - 0x11c (fneg): Negates the operand, and stores the result in the operand
 - 0x11d (finv): Calculates the multiplicative inverse of the operand
-- 0x11f (erfc): Computes the 1.0-erf(x) of the operand, without loss of precision, and stores the result in the operand.
 - 0x120 (fadd): Adds the second operand to the first.
 - 0x121 (fsub): Subtracts the second operand operand from the first.
 - 0x122 (fmul): Multiplies the first operand by the second.
 - 0x123 (fdiv): Divides the first operand by the second
-- 0x125 (hypot): Computes the hypotenuse of the two operands and stores the result in the first.
-- 0x126 (atan2): Computes the arc tangent of the first operand, divided by the second, but use the sign of both operands to determine quadrent.
 - 0x127 (frem): Computes the remainder of the first operand, divided by the second, and stores the result in the first.
 - 0x128 (fma): Multiplies the first operand by the second, and adds the third as though with infinite intermediate precision, storing the result in the first.
-- 0x129 (hypot3): Computes the hypotenuse of the three operands and stores the result in the first.
 
 If any operand is a NaN, the result is a qNaN. This does not cause INVALID exceptions to occur.
 
