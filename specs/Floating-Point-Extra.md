@@ -87,3 +87,22 @@ Instructions:
 - 0x125 (hypot): Computes the hypotenuse of the two operands and stores the result in the first.
 - 0x126 (atan2): Computes the arc tangent of the first operand, divided by the second, but use the sign of both operands to determine quadrent.
 - 0x129 (hypot3): Computes the hypotenuse of the three operands and stores the result in the first.
+
+If any operand is a NaN, the result is a qNaN. This does not cause INVALID exceptions to occur.
+
+All floating-point operations described within this section shall be performed to within 0.5 ULPs of the exact value, as determined by the result format.
+
+Handling of the Z flag for floating-point operations is on the logical value of the operation, rather than the bitwise value (like for integer operations). Both + and - 0.0 in results set the Z flag. -0.0 in results also sets the `N` flag.
+
+If either operand is NaN, the "sign" of the result is the same as the sign of the NaN. If both operands are NaN, the sign is negative if either sign is negative. 
+
+
+In computing the result, the size of the operand shall specify the minimum range and precision. If there is more than one operand, the largest operand specifies the minimum range and precision. If XOPSS is larger than the operand size, than the maximum range and precision for computing the result is given by XOPSS. A processor is not required to compute the result in the range and precision given by XOPSS. 
+The result is then converted to the destiniation format and stored in the destination operand. 
+If the result is larger than the maximum value of destination format, then OVERFLOW is triggered. If the result is smaller than the minimum value of the destination format, then UNDERFLOW is triggered. If the result cannot be exactly represented in the destination format, then INEXACT is triggered.
+
+If the result is smaller than the minimum normal value of the format, then the result is a denormal value of fpcrw.DENORM is set. Otherwise, UNDERFLOW is triggered and the result is +/-0.0.
+
+If an operation produces a NaN result, it is unspecified what NaN is produced, except that any operation on a qNaN or sNaN shall produce an qNaN. 
+
+The meaning of NaN representations is unspecified, except that the "canonical" values with only the most significant bit in the mantissa set with either sign, shall be quiet.
