@@ -253,7 +253,7 @@ Exceptions:
 
 Instructions:
 - 0x118 (fcmpz): Performs partial-order floating-point comparison with the operand and +0.0
-- 0x129 (fcmp): Performs partial-order floating-point comparison with both operands
+- 0x119 (fcmp): Performs partial-order floating-point comparison with both operands
 
 For fcmpz, +0.0 is the first operand of the comparison.
 
