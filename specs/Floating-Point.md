@@ -154,8 +154,8 @@ Overflow caused by `movfsi` and `movfx` yields the maximum (for positive inputs)
 
 ### Floating-point Arithmetic
 
-Opcodes: 0x116-0x118, 0x11B-0x11D, 0x120-0x123, 0x127, 0x128
-Operands: Opcodes 0x116-0x11D, 1. Opcodes 0x120-0x127, 2. Opcodes 0x128, 3.
+Opcodes: 0x100-0x10f,
+Operands: Opcodes 0x100-0x105, 1; Opcodes 0x106-0x10a, 2; Opcode 0x10b, 3.
 
 h: All other opcodes, `[00 0f]` where if `f` is set, `flags` is not modified.
 
@@ -189,18 +189,18 @@ Flags: If `f` is not set in `h`, `N`, `Z`, and `P` are set according to the resu
 
 Instructions:
 
-- 0x116 (round): Rounds the operand half-up and stores the result in the operand
-- 0x117 (ceil): Rounds the operand up and stores the result in the operand
-- 0x118 (floor): Rounds the operand down and stores the result in the operand
-- 0x11b (fabs): Computes the absolute value of the operand, and stores the result in the operand.
-- 0x11c (fneg): Negates the operand, and stores the result in the operand
-- 0x11d (finv): Calculates the multiplicative inverse of the operand
-- 0x120 (fadd): Adds the second operand to the first.
-- 0x121 (fsub): Subtracts the second operand operand from the first.
-- 0x122 (fmul): Multiplies the first operand by the second.
-- 0x123 (fdiv): Divides the first operand by the second
-- 0x127 (frem): Computes the remainder of the first operand, divided by the second, and stores the result in the first.
-- 0x128 (fma): Multiplies the first operand by the second, and adds the third as though with infinite intermediate precision, storing the result in the first.
+- 0x100 (round): Rounds the operand half-up and stores the result in the operand
+- 0x101 (ceil): Rounds the operand up and stores the result in the operand
+- 0x102 (floor): Rounds the operand down and stores the result in the operand
+- 0x103 (fabs): Computes the absolute value of the operand, and stores the result in the operand.
+- 0x104 (fneg): Negates the operand, and stores the result in the operand
+- 0x105 (finv): Calculates the multiplicative inverse of the operand
+- 0x106 (fadd): Adds the second operand to the first.
+- 0x107 (fsub): Subtracts the second operand operand from the first.
+- 0x108 (fmul): Multiplies the first operand by the second.
+- 0x109 (fdiv): Divides the first operand by the second
+- 0x10a (frem): Computes the remainder of the first operand, divided by the second, and stores the result in the first.
+- 0x10b (fma): Multiplies the first operand by the second, and adds the third as though with infinite intermediate precision, storing the result in the first.
 
 If any operand is a NaN, the result is a qNaN. This does not cause INVALID exceptions to occur.
 
@@ -223,9 +223,9 @@ The meaning of NaN representations is unspecified, except that the "canonical" v
 
 ### Floating-point comparions
 
-Opcodes: 0x11e, 0x124
+Opcodes: 0x118-0x119
 
-Operands: For opcode 0x11e, 1. For Opcode 0x124, 2.
+Operands: For opcode 0x118, 1. For Opcode 0x119, 2.
 
 
 Operand Contraints: No operand shall be have size 1. 
@@ -252,8 +252,8 @@ Exceptions:
 
 
 Instructions:
-- 0x11e (fcmpz): Performs partial-order floating-point comparison with the operand and +0.0
-- 0x124 (fcmp): Performs partial-order floating-point comparison with both operands
+- 0x118 (fcmpz): Performs partial-order floating-point comparison with the operand and +0.0
+- 0x129 (fcmp): Performs partial-order floating-point comparison with both operands
 
 For fcmpz, +0.0 is the first operand of the comparison.
 
