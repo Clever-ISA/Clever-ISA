@@ -13,8 +13,9 @@ Each extension should be given a corresponding target feature name. The names fo
 
 |  Extension    | Feature | Default Since |
 |---------------|---------|---------------|
-| Vector        | vec     | Disabled      |
-| Floating-Point| fp      | 1.0 or earlier|
+| Vector        | vector  | Disabled      |
+| Floating-Point| float   | 1.0 or earlier|
+| Floating-Point Extra| float-extra | Disabled |
 
 
 Toolchains should provide mechanisms for disabling default-enabled target features and for enabling default-disabled target features. 

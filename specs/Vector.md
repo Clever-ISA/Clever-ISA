@@ -6,6 +6,7 @@ A CPU indicates conformance with these extensions by setting bit 11 (VEC) of cpu
 
 ## Supervisor Support
 
+
 If a CPU indicates support for these extensions by setting cpuex2.VEC, a supervisor may indicate support by setting bit 8 (VEC) of cr0. Setting the bit enables all of the features described herein, otherwise, all of them are unavailable.
 
 ## Interaction with Floating-point extensions
@@ -66,7 +67,10 @@ Exceptions:
 Instructions:
  - Reads and decodes a full instruction following the prefix, and applies it to each of the vector elements in each specified vector register, and the exact value of each scalar operand.
 
-Flags: Any prefixed instructions that modifies flags sets the M, Z, and P flags according to the whole value in the vector result. The C, and V flags are not modified by the vectorized instruction (Note: This is a defect. Later versions will provide a mechanism for determining when individual operations in a vectorized operation produces a carry or signed overflow)
+Flags: 
+If the destination is not a vector operand, flags are set according to the instruction and it's result.
+If the destiniation is a vector operand, other than v31, then the flags are set in the elements (corresponding to the element size control) of v31, and the overall Z and P flags are stored in `flags`.
+
 
  The following instructions may have a `vec` prefix:
  - Opcodes 0x001-0x005
@@ -95,7 +99,6 @@ As a trivial example, it is unspecified whether `r0` contains 1, 2, 3, or 4 afte
 
 If any operation performed under a vec prefix causes a floating-point exception, all other operations are completed, and the entire value is stored if the exception is masked (otherwise, no register or memory is modified), and all floating-point exceptions from all operations are indicated in `fpcw`, and then either `FP` or `PROT` occurs if any exception is unmasked. All other exception cases are checked *before* performing any operations.
 
-Opcodes 0x200-0x202, as well as any instruction that is modified by the `l` bit
 
 
 ## Vector Move
