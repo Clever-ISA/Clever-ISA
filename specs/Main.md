@@ -136,7 +136,9 @@ Physical Address Size, as determined by cpuex2.PAS is assigned as follows:  0=32
 ## Operands
 
 Operands are encoded in clever as 2 bytes, known as the operand control structure, in big endian (Most-significant Byte at the lowest address), using the 2 most significant bits as a control indicator. The definitions of each encoded form are defined below. 
-Not all bits of encoded operands are used. Any unused/reserved bits must be set to 0 or an undefined instruction exception is raised. These bits may be given meaning in future versions or extensions
+Not all bits of encoded operands are used. Any unused/reserved bits must be set to 0 or an undefined instruction exception is raised. These bits may be given meaning in future versions or extensions.
+
+Instructions that have multiple operands can have operand size differ between two operands. Each source operand is zero extended to the largest operand size, and the result is truncated to the destination operand size, if any, before being stored. 
 
 ### Register Operand
 
@@ -162,7 +164,9 @@ If `k` is clear, then `oooo` is the general purpose register that contains the o
 
 `[10 y r iiiiiiiiiiii]`
 
-An up to 12-bit immediate value can encoded directly into the operand. If `r` is set, then the value of `ip` is added to the immediate value.
+An up to 12-bit immediate value can encoded directly into the operand. If `r` is set, then the value of `ip` is added to the signed immediate value.
+
+The size of a Short immediate operand is 12-bit, not 16-bit. When using the `r` bit, or the movsx instruction, the 12-bit is treated as the sign bit for extension to the destination size.
 
 ### Long Imm 
 
@@ -177,6 +181,20 @@ If `m` is set, the the immediate value is a memory reference, and the operand ac
 Immediate values of size 16 (ss=3) are reserved, and attempts to use them in an operand will unconditionally produce `UND`.
 
 Long Immediate Values and values in memory are encoded in the Little-Endian byte Order (The least significant byte occurs at the lowest address). 
+
+
+### Hetrogenous Operand Sizes and destination operands
+
+Certain instructions will store a result in an operand. These instructions refer to this operand as the "destination". In the case of multi-operand instructions, if any, the destination operand is the first operand. A destination operand must be "Writable" (either a register, an indirect register operand, or a memory reference). Some instructions may use the value of a destination operand.
+
+
+When using multi-operand instruction, the operands may have different sizes. 
+Each operand used as a source is loaded according to it's size. 
+Then each operand is zero extended to the largest operand size, if it is not already that size; Immediates (other than memory references) with the `r` bit set will instead be sign-extended to this size, then the value of `ip` is truncated and added to the value instead of being zero extended. 
+The operation described by the instruction is then performed on each operand, and the result is truncated or zero-extended to the destination operand size.
+
+Certain instructions, such as movsx, have special behaviour with heterogenous operand sizes, and this behaviour overrides the behaviour described here.
+
 
 ## Instruction Encoding
 
@@ -270,16 +288,12 @@ h: `[ss wf]`, where `ss` is log2(size) of the operation, as though for a registe
 
 Flags: Sets C, M, V, and Z according to the result of the operation if the `f` bit is not set in `h`.
 
-Exceptions:
-- For Opcodes 0x007 and 0x040,
 
 Instructions:
 - 0x006 (mul): Multiplies r0 and r3, storing the low order bits in r0, and the high order bits in r3.
 - 0x007 (div): Divides r0 by r3, storing the quotient in r0 and the remainder in r3. If w is set in h, then the dividend has double the size specified by ss, and the high order bits are present in r1.
 - 0x040 (imul): Performs signed multiplication of r0 and r3, storing the low order bits in r0 and the high order bits in r3
 - 0x048 (idiv): Performs signed division between r0 and r3, storing the quotient in r0 and the remainder in r3. If w is set in h, then the divend has double the size specified by ss, and  the high order bits are present in r1.
-
-If the operand
 
 ### Register Manipulation Instructions
 
@@ -311,6 +325,9 @@ Instructions:
 
 If the destination operand of `mov` or `lea` is smaller than the result, the value stored is truncated. If the destination operand is larger than the result, the value stored is zero-extended to the destination size.
 All memory accesses are performed atomically, wrt. other memory accesses, and operations performed under a memory lock. 
+
+For `lea`, the size of the source operand is treated as 64-bit always - the address of the operand is calculated in 64-bits before being truncated to the destination operand size (if necessary). For memory references and indirect registers, the size of the reference is ignored.
+
 
 ### No Operation
 
@@ -356,6 +373,7 @@ Instructions:
 
 If the operand (opcodes 0x014 and 0x015) or the implicit register (opcodes 0x016 and 0x017) mention `sp`, the value of the register before the operation is used for the operand. All memory operations are atomic.
 
+
 ### Bulk Register Storage
 
 Opcodes: 0x018-0x01f
@@ -379,13 +397,13 @@ Exceptions:
 
 Instructions:
 - 0x018 (stogpr): Stores the value of each general purpose register (0<=r<16) to the memory operand.
-- 0x019 (stoar): Stores the value of each program register (0<=r<128) to the memory operand. Any reserved or unavailable floating-point register stores 0 instead.
+- 0x019 (stoar): Stores the value of each program register (0<=r<32) to the memory operand. Any reserved or unavailable floating-point register stores 0 instead.
 - 0x01a (rstogpr): Loads the value of each general purpose register (0<=r<16) from the memory operand. 
-- 0x01b (rstoar): Loads the value of each program register (0<=r<128), other than `ip`, from the memory operand. The value of any reserved register or protected bit in `flags` is ignored in the memory region.
+- 0x01b (rstoar): Loads the value of each program register (0<=r<32), other than `ip`, from the memory operand. The value of any reserved or protected bit in `flags` is ignored in the memory region.
 - 0x01c (pushgpr): Pushes the value of each general purpose register (0<=r<16) to the stack. Lower memory addresses (closer to the stack head) store lower numbered registers.
-- 0x01d (pushar): Pushes the value of each program register (0<=r<128) to the memory operand. Any reserved or unavailable register stores 0 instead. Lower memory addresses (closer to the stack head) store lower numbered registers.
+- 0x01d (pushar): Pushes the value of each program register (0<=r<32) to the memory operand. Any reserved or unavailable register stores 0 instead. Lower memory addresses (closer to the stack head) store lower numbered registers.
 - 0x01e (popgpr): Pops the value of each general purpose register from the stack.
-- 0x01f (popar): Pops the value of each program register (0<=r<128), other than `ip`, from the stack. The value of any reserved register or protected bit in `flags` is ignored in the memory region.
+- 0x01f (popar): Pops the value of each program register (0<=r<32), other than `ip`, from the stack. The value of any reserved or protected bit in `flags` is ignored in the memory region.
 
 If the operand to `ldgpr` or `ldar` is an indirect register, the address to load each register from is determined prior to performing the operation. `pushgpr` and `pushar` update the value of the stack pointer after it is stored, and `popgpr` and `popar` do not update the value of the stack pointer after restoring it. The entire memory operation shall be atomic.
 
@@ -396,7 +414,7 @@ Operands: 2
 
 h: `[00 0f]`where if `f` is set `flags` is not modified.
 
-Operand Constraints: For opcode 0x020 and 0x021, at least one operand shall be a register, and the first operand shall not be a immediate value other than a memory reference. For opcode 0x021, both operands shall have the same size, and the second operand shall not be a short immediate value.
+Operand Constraints: For opcode 0x020 and 0x021, at least one operand shall be a register. For operand 0x021, both operands must be the same size. 
 
 Flags: `M` and `Z` are set according to the result, unless `f` is set in `h`.
 
@@ -417,8 +435,13 @@ Instructions:
 - 0x020 (movsx): Moves a signed integer operand from the second operand, to the first. If the second operand is smaller than the first, the highest bit is copied to each higher bit in the first operand.
 - 0x021 (bswap): Moves the second operand into the first, swapping the order of the bytes stored. 
 
+`movsx` modifies the behaviour of heterogenous operand sizes as follows:
+- The value of the source operand is loaded
+- If it is at least the size of the destination operand, it is truncated to the destination size as normal, 
+- Otherwise, if is less than the size of the destination operand, the value is sign extended to the size of the destination operand. 
 
 
+`bswap`, unlike other instructions, forbids heterogenous operand sizes, and both operands must be the same size.
 
 ### Block Operations
 
@@ -919,7 +942,7 @@ num | Name (ID) | Description
 During initialization, all registers have undefined values, except:
 - ip, which shall be 0xff00
 - flags, which shall be 0 (C=0, Z=0, V=0, N=0, FPEN=0, FPERR=0, FPQ=0, XM=0)
-- cr0, which shall be 0 (FPEN=0, IE=0)
+- cr0, which shall be 0 (PG=0, IE=0)
 - flprotect, which shall be 0
 - ciread, which shall be 0
 - cpuidhi, cpuidlo, cpuex2, cpuex3, cpuex4, cpuex5, cpuex6, and mscpuex, which shall have machine-specific values consistent with the requirements of this document.

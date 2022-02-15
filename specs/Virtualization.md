@@ -45,7 +45,7 @@ When the hypervisor recieves an interrupt while within the context of a virtual 
 
 It is possible to detect the prescene of a hypervisor from Managed Supervisors in a few standard ways, as permitted by the hypervisor. io address 0x7f800000 contains the managed execution control word, and the ME bit will be set in a Managed Supervisor (and clear in an Unmanaged Supervisor). 
 Additionally, io port 0x7f800001 contains the vm context identifier of the current vm when read in the context of a virtual machine (including from within that virtual machine), and otherwise will contain `0`
-Both of these mechanisms may be disabled by the hypervisor that enables IO Trapping by either reading zero or triggerring. 
+Both of these mechanisms may be disabled by the hypervisor that enables IO Trapping by either reading zero or triggerring UND. 
 
 Other, non-standard mechanisms may be by using the cpuidhi and cpuidlo registers with prearranged identifiers for particular hypervisors, a machine specific instruction, or a hypervisor procedure call. 
 
