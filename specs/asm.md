@@ -37,10 +37,13 @@ To indicate an `ip` relative value, add the immediate to the register name `ip`.
 
 
 When encoding an immediate operand without an explicit size control keyword, the smallest immediate size that encodes the value should be used. When symbol values are used, 8 byte encodes must be used by the assembler unless it can resolve the reference, but the assembler may emit link relaxations for smaller immediate encodings
-Negative values are encoded using 8 bytes for non-`ip` relative immediates.
+Negative values are encoded using 8 bytes for non-`ip` relative immediates, for any instruction other than `movsx` (opcode 0x020).
+
 
 If an explicit size control is used, then the constant must be encoded using that control. The `byte` control is illegal for immediates. 
-The assembler should check that the value is within range for an unsigned (non-relative positive immediate) or signed (relative or negative immediate) value of that size.
+The assembler should check that the value is within range for an unsigned (non-relative positive immediate) or signed (relative, negative immediate, or immediate operand of `movsx`) value of that size.
+
+
 
 ### Memory References
 
