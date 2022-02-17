@@ -196,6 +196,10 @@ The operation described by the instruction is then performed on each operand, an
 Certain instructions, such as movsx, have special behaviour with heterogenous operand sizes, and this behaviour overrides the behaviour described here.
 
 
+Address computations always occur in 64-bits, regardless of the size of the incoming values (a 16-bit immediate address is still used as a 64-bit value). This is significant for the lea instruction, where the source is the address of an indirect register or memory reference operand, rather than the memory value accessible from that address.
+
+This also applies to immediates using ip-relative encoding: the size of the operand is 64-bit always, and the value is computed in 64-bit.
+
 ## Instruction Encoding
 
 Instruction opcodes are encoded as 2 bytes, in big endian byte order. The most significant 12 bits of the instruction determine the opcode, and the least significant 4 bits encode instruction specific information, referred to in this document as `h`. Not all instructions make use of the `h` bits. 
@@ -302,7 +306,7 @@ Operands: 2 for opcodes 0x008 and 0x009, 1 for opcodes 0x00a and 0x00b.
 
 h: Opcodes 0x00a and 0x00b only, the general purpose register for the destination (0x00a) or source (0x00b) operand. Otherwise, reserved and shall be zero
 
-Operand Constraints: For opcodes 0x008 and 0x009, the first operand shall be a memory reference or register, and at least one operand shall be a register. For Opcode 0x009, the second operand shall be either an indirect register, or a memory reference. 
+Operand Constraints: For opcodes 0x008 and 0x009, the first operand shall be a memory reference or register, and at least one operand shall be a direct register. For Opcode 0x009, the second operand shall be either an indirect register, or a memory reference. 
 
 Exceptions: 
 - UND, if any operand constraint is violated. 
