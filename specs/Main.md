@@ -580,11 +580,11 @@ Instructions:
 
 ### Comparison Operations
 
-Opcode: 0x12c-0x12f
+Opcode: 0x06c-0x06f
 
-Operands: Opcode 0x12c-0x12d, 2. Opcode 0x12e-0x12f, 1.
+Operands: Opcode 0x06c-0x06d, 2. Opcode 0x06e-0x06f, 1.
 
-h: For Opcodes 0x12c-0x12d, shall be zero. For opcodes 0x12e-0x12f, `[rrrr]` where r is the gpr to use as the first operand (0<=r<16).
+h: For Opcodes 0x06c-0x06d, shall be zero. For opcodes 0x06e-0x06f, `[rrrr]` where r is the gpr to use as the first operand (0<=r<16).
 
 Operand Constraints: At least one operand shall be an immediate value other than a memory reference, or a register. The first operand shall be a register, indirect register, or memory reference. 
 
@@ -599,13 +599,13 @@ Exceptions:
 - PF, if paging is disable, and a memory operand accesses an out of range physical address
 - PROT, if a memory operand is out of range for the PTL mode.
 
-Flags: Opcode 0x12c and 0x12e, sets Z, N, M, and V according to the result. Opcode 0x12d and 0x12f, sets Z and M according to the result.
+Flags: Opcode 0x06c and 0x06e, sets Z, N, M, and V according to the result. Opcode 0x06d and 0x06f, sets Z and M according to the result.
 
 Instructions:
-- 0x12c (cmp): Subtracts the second operand from the first, and sets flags based on the result. 
-- 0x12d (test): Computes the bitwise and of the first and second operands and sets flags based on the result.
-- 0x12e (cmp*r*): Same as cmp, but the first operand is the encoded general purpose register
-- 0x12f (test*r*): Same as test, but the first operand is the encoded general purpose register.
+- 0x06c (cmp): Subtracts the second operand from the first, and sets flags based on the result. 
+- 0x06d (test): Computes the bitwise and of the first and second operands and sets flags based on the result.
+- 0x06e (cmp*r*): Same as cmp, but the first operand is the encoded general purpose register
+- 0x06f (test*r*): Same as test, but the first operand is the encoded general purpose register.
 
 
 All memory accesses are atomic wrt. other memory accesses and memory stores.
