@@ -75,7 +75,7 @@ Instructions:
 - 0x129 (exp2): Computes 2^x of the operand, and stores the result in the operand.
 - 0x12a (log10): Computes log10(x) (the base 10 logarithm) of the operand, and stores the result in the operand
 - 0x12b (lnp1): Computes ln(x+1) of the operand, and stores the result in the operand
-- 0x12c (expm1): Computes exp(x-1) of the operand, and stores the result in the operand.
+- 0x12c (expm1): Computes exp(x)-1 of the operand, and stores the result in the operand.
 - 0x12d (sqrt): Computes sqrt(x) of the operand, and stores the result in the operand.
 
 If any operand is a NaN, the result is a qNaN. This does not cause INVALID exceptions to occur.
