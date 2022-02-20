@@ -94,6 +94,10 @@ A callee saved register must be stored by any function that makes use of it and 
 
 ### Calling Convention
 
+The stack pointer shall be present in `r7` upon entry to a function.
+
+When calling a function, the stack pointer shall be aligned to 8 bytes. 
+
 #### Type Classification
 
 For the purposes of determining how to pass a type to a function, or return it from a function, it is necessary to classify the type. Classification occurs as defined below.
