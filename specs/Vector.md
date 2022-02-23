@@ -2,6 +2,17 @@
 
 This extension documents the SIMD/Vector Extensions to the Base Clever Processor. These extensions allow for the processing of multiple different values simultaneously with a single instruction.
 
+## License
+
+Copyright (c)  2021  Connor Horman.
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3
+or any later version published by the Free Software Foundation;
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+A copy of the license is included in the repository, under the file entitled LICENSE. Otherwise, you may find a copy at <https://www.gnu.org/licenses/fdl-1.3.en.html>.
+
+## Conformance
+
 A CPU indicates conformance with these extensions by setting bit 11 (VEC) of cpuex2. A CPU that does not support these extensions shall have that bit set to `0`. 
 
 ## Supervisor Support
