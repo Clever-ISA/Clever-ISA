@@ -17,7 +17,7 @@ A CPU Indicates conformance to these extensions by setting bit 12 (VIRT) of cpue
 
 ## Supervisor Execution Mode 
 
-This document describes supervisors (flags.XM=0) as executing in one of two further modes:
+This document describes supervisors (mode.XM=0) as executing in one of two further modes:
 - Unmanaged Supervisor Mode which is the default, and
 - Managed Supervisor Mode, which indicates the presence of a hypervisor
 
@@ -29,14 +29,14 @@ Switching between these modes is described in "Managed Execution Control Word".
 
 As managed mode only affects supervisor instructions and exceptions, there is no distinction made between managed program execution mode and unmanaged program execution mode.
 
-Hypervisor mode is incompatible with program-execution mode. A managed supervisor must first be created (vstart) to transition into program-execution mode, or the program must disable mxcw.ME. While in hypervisor mode, an iret or scret that places the system in Program-Execution Mode (by setting flags.XM to 1) causes an ABORT.
+Hypervisor mode is incompatible with program-execution mode. A managed supervisor must first be created (vstart) to transition into program-execution mode, or the program must disable mxcw.ME. While in hypervisor mode, an instruction that places the system in Program-Execution Mode (by setting mode.XM to 1) causes an ABORT.
 
 Registers other than r0 and r1 used by the hypervisor are preserved in an unspecified manner that does not modify any memory accessible to the hypervisor when transfering control to a managed supervisor, and are restored when control is transfered to the hypervisor. Control is transfered to a hypervisor from a managed supervisor when:
 - The supervisor issues an hcall instruction,
 - The supervisor recieves an interrupt that is trapped by the hypervisor or is RESET, or
 - When the hypervisor recieves an interrupt. 
 
-When transferring control to the hypervisor from a managed supervisor, the register state of the virtual machine is stored in the register array given by vmcs.vmregs, and are reloaded when transferring control back to the virtual machine. Any register that is not available in the CPU's current mode are *not modified* when loading or storing register values. Additionally, illegal values of control registers loaded in this manner, the `flags` register, or `fpcw` (register 19 when floating-point extensions are available) are reflected unmodified in the supervisor (however, writing such values will continue to have the standard effect). This allows hypervisors to emulate extensions that does not have available hardware support. The presence of extensions are given by bits in the loaded cpu extended feature registers intersect those set by the cpu at startup - an exception occurs in the supervisor if either version of the register indicates the feature is unavailable. 
+When transferring control to the hypervisor from a managed supervisor, the register state of the virtual machine is stored in the register array given by vmcs.vmregs, and are reloaded when transferring control back to the virtual machine. Any register that is not available in the CPU's current mode are *not modified* when loading or storing register values. Additionally, illegal values of control registers loaded in this manner, the `flags` register, the `mode` register, or `fpcw` (register 19 when floating-point extensions are available) are reflected unmodified in the supervisor (however, writing such values will continue to have the standard effect). This allows hypervisors to emulate extensions that does not have available hardware support. The presence of extensions are given by bits in the loaded cpu extended feature registers intersect those set by the cpu at startup - an exception occurs in the supervisor if either version of the register indicates the feature is unavailable. 
 
 When the hypervisor recieves an interrupt while within the context of a virtual machine (including an exception raised by the hcall instruction executed from within a hypervisor) the stored ip value is undefined, but the current virtual machine's vm context identifier is available in io port 0x7f800001, and a pointer to the virtual machine's control structure in io port 0x7f800002. 
 
@@ -112,7 +112,7 @@ Operands: 0
 h: Reserved and Must be 0.
 
 Supervisor Exceptions:
-- PROT: If flags.XM=1
+- PROT: If mode.XM=1
 - UND: If the Processor is not in Managed Supervisor Mode
 
 Hypervisor Exceptions
@@ -141,7 +141,7 @@ Operands: 0
 h: Reserved and Must be 0.
 
 Supervisor Exceptions:
-- PROT: If flags.XM=1
+- PROT: If mode.XM=1
 - UND: If the processor is not in Hypervisor Mode
 - XA: If the destination instruction pointer is not well-aligned
 - PF: If paging is enabled in the supervisor, and the destination instruction pointer is not executable

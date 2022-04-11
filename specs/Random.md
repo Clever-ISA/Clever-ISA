@@ -42,8 +42,8 @@ h: `[rrrr]` where `r` is a General Purpose Register `0<=r<16`
 
 Exceptions:
 - UND if cpuex2.RAND=0
-- PROT if flags.XM=1, and cr0.XMRAND=0
-- PROT if flags.XM=1, cr0.RPOLLINFO=0, and polling the random bit generator fails
+- PROT if mode.XM=1, and cr0.XMRAND=0
+- PROT if mode.XM=1, cr0.RPOLLINFO=0, and polling the random bit generator fails
 
 Flags: Sets `P` if polling the random bit generator fails, otherwise clears `P`. Note that `P` is set reguardless of whether an exception occurs
 

@@ -42,6 +42,7 @@ A copy of the license is included in the repository, under the file entitled LIC
 | 15  | r15/link      | General        |                        Fast Call Return Address                         |
 | 16  | ip            | Readonly[^1]   |                           Instruction Pointer                           |
 | 17  | flags         | Flags          |                            Processor Status                             |
+| 18  | mode          | Readonly        |                         Processor Execution Mode            |
 | 63  | reserved      | Reserved       | Undefined register. Will not be given meaning in a future version |
 | 128 | cr0           | Supervisor     |                            Processor Control                            |
 | 129 | cr1/page      | Supervisor     |            Physical Address of the Virtual Memory Page Table            |
@@ -94,10 +95,9 @@ flags Register bitfield:
 |2   | Overflow (V)| Set by arithmetic operations that cause signed overflow
 |3   | Negative (N)| Set by operations that have a negative result
 |4   | Parity (P\) | Set by operations that have a result with Odd Parity.
-|19  | Mode (XM)  | If clear, operating in supervisor mode, otherwise program execution mode. Cannot be written to.
+
 
 Any attempt to write to an unmentioned bit shall be ignored. 
-Bit 19 may be modified only by the interrupt/exception procedure or the supervisor call procedure (scall, opcode 0x7c6), and by the scret (opcode 0xfc8) and reti (opcode 0xfc9) instructions. All other writes to bit 19 shall be ignored.
 Many instructions will set some of or all of bits 0-4 in flags, based on a result. 
 The instructions will mention which flags are affected in a *Flags* section of the instruction definition.
 The flags are set as follows:
@@ -106,6 +106,25 @@ The flags are set as follows:
 * flags.V is set if the arithmetic operation overflows the signed operand (that is, changes sign without a Carry) for the destination operand size, and cleared otherwise. 
 * flags.N is set if the operation loads or stores a negative number (most significant bit set), or an arithmetic or logic operand's result is a negative signed number, and cleared otherwise.
 * flags.P is set if the operation loads a value with a odd parity (odd number of 1 bits set in the value), or an arithetmic or logic operand's result is such a value, and cleared otherwise.
+
+Processor Mode (mode) bitfield:
+
+| bit | Name (id)                |                              Notes                               |
+| --- | ------------------------ |:----------------------------------------------------------------:|
+| 32  | Execution Mode (XM)      | Whether or not the program is in supervisor (0) or program (1) mode |
+| 33  | Execution Mode Mirror (XMM) | Set to a copy of XM                                          |
+
+`mode` can only be written by the following instructions:
+* `jsm` (opcode 0x7ca and 0x7da)
+* `callsm` (opcode 0x7cb and 0x7db)
+* `retrsm` (opcode 0x7cc)
+* `syscall` (opcode 0x7c4)
+* `int`     (opcode 0x7c5)
+- `scret`   (opcode 0xfc6)
+- `iret`    (opcode 0xfc7)
+
+Other writes trigger UND (except for `rstar`, `popar`, and `rstregf`). With the exception of `syscall` and `int`, the upper 32-bits of `mode` are reserved for the supervisor, any attempt to write to them with `mode.XM=1` is ignored.
+
 
 Processor Control (cr0) bitfield
 
@@ -230,8 +249,6 @@ The fetching of entire immediate values, may tear under the conditions above on 
 Each discrete element of the instruction stream is a multiple of two bytes. These elements, and thus the value of the `ip` register, is aligned to 2 bytes. 
 The target of any branch, direct or indirect, including implicit branches (such as the `ret`, `iret`, `scret` instructions) and asynchronous branches (ie. for exception/hardware interrupt handlers), must be an address that's a multiple of two. Failing this requirement triggers the XA (Execution Alignment) Exception. 
 Other address constraints apply. 
-
-
 
 
 ## Program Instructions
@@ -699,6 +716,9 @@ For branch opcode 0x5. `[iiii]` where `i` is the software interrupt number.
 For branch opcode 0xC: `[v0 ss]` where `ss` is `log2(size)-1` of the immediate value used for the destination and `v` is whether to push `flags` before `ip`.
 For all other branch opcodes, reserved and must be zero
 
+Exceptions:
+- PROT: For branch opcodes 0xB-0xD, If the `mode.XM=0`, and the value to be stored in `mode` sets `mode.XM` to be different from `mode.XMM`. 
+
 `oooo` is the branch opcode, given below.
 
 Instructions:
@@ -713,9 +733,9 @@ Instructions:
     - 0x8 with h=0xf (ifjmp): Indirect Fast Jump. Does not synchronize instruction stream with memory.
 - 0x9 (icall): Indirect call to the destination, pushing the ip of the next instruction to the stack.
 - 0xA (ifcall): Indirect fast call to the address in r15, storing the ip of the next instruction in r14. Does not synchronize instruction stream with memory.
-- 0xB (jmpsf): Jump and Set flags. Reads r0 and stores the result in `flags`. Does not modify any reserved bits or supervisor bits in program mode, but may set `flags.XM` if clear.
-- 0xC (callsf): Call procedure and set flags. If v is set in `h`, then pushes `flags` before `ip`. Then loads `flags` with the value in `r0. Does not modify any reserved bits or supervisor bits in program mode, but may set `flags.XM` if clear.
-- 0xD (retrsf): Return from procedure and restore `flags`. pops an 8-byte value from the stack and returns to that address. Prior to returning, also pops `flags`. Does not modify any reserved bits or supervisor bits in program mode, but may set `flags.XM` if clear.
+- 0xB (jsm): Jump and Set flags. Reads r0 and stores the result in `mode`. 
+- 0xC (callsm): Call procedure and set mode. If v is set in `h`, then pushes `mode` before `ip`. Then loads `mode` with the value in `r0. 
+- 0xD (retrsm): Return from procedure and restore `mode`. pops an 8-byte value from the stack and returns to that address. Prior to returning, also pops `mode`. 
 
 ##### Supervisor calls
 
@@ -738,14 +758,15 @@ Exceptions:
 
 If `sccr.fc=1`, then a fast supervisor call is performed as follows:
 - `r7` is stored in `r12`, and, if scsp is not the value `0`, then scsp is stored in `r7`,
-- `flags` is stored in `r13`, then `flags.XM` is set to `0`,
+- `mode` is stored in `r13`, then both `mode.XM` and `mode.XMM` are cleared.
 - the return address is stored in `r14`,
 - control is transfered to the absolute address in scdp.
 
 Otherwise, a stack supervisor call is performed as follows:
 - `r7` is stored in a temporary location designated `tmp`, then, if scsp is not the value `0`, then `scsp` is stored in `r7`,
 - The temporary location `tmp` is pushed to the stack,
-- `flags` is pushed to the stack, then `flags.XM` is set to `0`,
+- `flags` is pushed to the stack, 
+- `mode` is pushed to the stack, then both `mode.XM` and `mode.XMM` are cleared
 - The return address is pushed to the stack,
 - control is transfered to the absolute address in scdp.
 
@@ -753,7 +774,7 @@ Otherwise, a stack supervisor call is performed as follows:
  
 ## Supervisor Instructions
 
-These instructions are available only to the supervisor. If executed when flags.XM=1, then PROT is raised. 
+These instructions are available only to the supervisor. If executed when mode.XM=1, then PROT is raised. 
 
 ### Supervisor Branches
 
@@ -763,19 +784,20 @@ Operands: None
 h: Shall be 0
 
 Exceptions:
+- PROT, if mode.XM=1
 - Any branch exception
 
 
 Opcode 0xFC6 (scret) returns from a supervisor call. If sccr.fc is set, then the fast return procedure is used, as follows:
 - `ip` is loaded from `r14`,
-- `flags` is loaded from `r13`,
-- `r7` is loaded from r12,
+- `mode` is loaded from `r13`
+- `r7` is loaded from  `r12`,
 - Control is transfered to the address loaded into `ip`
 
 
 Opcode 0xFC7 (reti) performs the following actions:
 - `ip` is popped
-- `flags` is popped
+- `mode` is popped
 - `sp` is popped
 - Control resumes at `ip`
 
@@ -789,7 +811,7 @@ h: Machine Specific
 
 Exceptions:
 - UND, if the host machine does not provide the specified instruction (refer to machine specific documentation)
-- PROT, if flags.XM=1
+- PROT, if mode.XM=1
 - Any other Exception documented by the machine
 
 Instructions 0xfe0-0xffe are reserved for machine dependent behavior and will not be assigned further meaning in future ISA versions. Refer to machine specific documentation.
