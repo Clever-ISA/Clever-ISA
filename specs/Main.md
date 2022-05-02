@@ -111,7 +111,7 @@ Processor Mode (mode) bitfield:
 
 | bit | Name (id)                |                              Notes                               |
 | --- | ------------------------ |:----------------------------------------------------------------:|
-| 32  | Execution Mode (XM)      | Whether or not the program is in supervisor (0) or program (1) mode |
+| 32  | Execution Mode (XM)      | Whether the program is in supervisor (0) or program (1) mode |
 | 33  | Execution Mode Mirror (XMM) | Set to a copy of XM                                          |
 
 `mode` can only be written by the following instructions:
@@ -407,7 +407,7 @@ Operand Constraints: For 0x018-0x01b, the operand shall be an indirect register 
 Exceptions:
 - UND, if a operand constraint is violated
 - UND, if the operand of opcode 0x015 is ip
-- PROT, if a supervisor register is an operand, and `flags.XM=1`.
+- PROT, if a supervisor register is an operand, and `mode.XM=1`.
 - UND, if a reserved register is an operand.
 - PF, if the target address is an unavailable virtual memory address
 - PF, if page protections are violated by the access
@@ -442,7 +442,7 @@ Flags: `M` and `Z` are set according to the result, unless `f` is set in `h`.
 Exceptions:
 - UND, if a operand constraint is violated
 - UND, if any destination operand is flags or ip
-- PROT, if a supervisor register is an operand, and `flags.XM=1`.
+- PROT, if a supervisor register is an operand, and `mode.XM=1`.
 - UND, if a reserved register is an operand.
 - UND, if a floating-point operand has size 1
 - PF, if the target address is an unavailable virtual memory address
@@ -509,7 +509,7 @@ Operand Constraints: At least one operand shall be an immediate value other than
 Exceptions: 
 - UND, if any operand constraint is violated. 
 - UND, if a reserved register is accessed by the instruction
-- PROT, if a Supervisor register is accessed, and the program is not in Program Execution Mode
+- PROT, if a Supervisor register is accessed, and the program is in Program Execution Mode
 - UND, if the destination operand is the flags or ip register.
 - PF, if a memory operand accesses an unavailable virtual memory address
 - PF, if the first operand is a memory operand, and page protections are violated by the access
@@ -549,7 +549,7 @@ Flags: Unless `f` is set in `h`, sets `M`, `Z`, and `P` according to the result 
 Exceptions: 
 - UND, if any operand constraint is violated. 
 - UND, if a reserved register is accessed by the instruction
-- PROT, if a Supervisor register is accessed, and the program is not in Program Execution Mode
+- PROT, if a Supervisor register is accessed, and the program is in Program Execution Mode
 - UND, if the destination operand is the flags or ip register.
 - PF, if a memory operand accesses an unavailable virtual memory address
 - PF, if the first operand is a memory operand, and page protections are violated by the access
@@ -575,7 +575,7 @@ h: `[rrrr]` where `r` is the number of the gpr `(0<=r<16)` of the destination (O
 Exceptions: 
 - UND, if any operand constraint is violated. 
 - UND, if a reserved register is accessed by the instruction
-- PROT, if a Supervisor register is accessed, and the program is not in Program Execution Mode
+- PROT, if a Supervisor register is accessed, and the program is in Program Execution Mode
 - UND, if the destination operand is the flags or ip register.
 - PF, if a memory operand accesses an unavailable virtual memory address
 - PF, if the first operand is a memory operand, and page protections are violated by the access
@@ -609,7 +609,7 @@ Exceptions:
 - UND, if any operand constraint is violated. 
 - UND, if a reserved register is accessed by the instruction
 - UND, if a floating-point register is accessed, and cr0.FPEN=0
-- PROT, if a Supervisor register is accessed, and the program is not in Program Execution Mode
+- PROT, if a Supervisor register is accessed, and the program is in Program Execution Mode
 - UND, if the destination operand is the flags or ip register.
 - PF, if a memory operand accesses an unavailable virtual memory address
 - PF, if the first operand is a memory operand, and page protections are violated by the access
@@ -824,7 +824,7 @@ Operands: 0
 h: Shall be 0
 
 Exceptions:
-- PROT, if flags.XM=1
+- PROT, if mode.XM=1
 
 Instruction:
 - ceases processor execution 
@@ -841,7 +841,7 @@ h: Shall be 0
 Operand Constraint: All operands shall be indirect registers or memory references.
 
 Exceptions:
-- PROT, if flags.XM=1
+- PROT, if mode.XM=1
 - UND, if any operand constraint is violated
 - PF, if any memory operand is out of bounds
 - For opcode 0x802: PF, if any control bits are set in ptbl
@@ -861,7 +861,7 @@ Operands: None
 h: `[00 ss]`, where `ss` is `lg(size)` of the transfer.
 
 Exceptions:
-- PROT, if flags.XM=1
+- PROT, if mode.XM=1
 
 Flags: 0x806 Sets Z, M, and P based on the value read
 
@@ -887,7 +887,7 @@ Operand Constraints: The operand shall be an indirect register, or a memory refe
 Exceptions:
 - UND, if any operand constraint is violated
 - For opcode 0x809, PROT, if any reserved register is restored with a value other than `0`. 
-- PROT, if flags.XM=1
+- PROT, if mode.XM=1
 
 Instructions:
 - 0x808 (storegf): Stores the value of each register to the memory address specified by the operand. The value of `ip` stored is the address immediately following this instruction
