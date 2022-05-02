@@ -25,11 +25,11 @@ A copy of the license is included in the repository, under the file entitled LIC
 | r   | Register Name | Availability   |                                  Notes                                  |
 | --- | ------------- | -------------- |:-----------------------------------------------------------------------:|
 | 0   | r0/racc       | General        |                                                                         |
-| 1   | r1/rsrc       | General        |Source Pointer Register for block instructions.|
-| 2   | r2/rdst        | General        |Destination Pointer Register for block instructions|
-| 3   | r3/rcnt       | General        | Counter for block instructions |
-| 4   | r4            | General        |                          |
-| 5   | r5            | General        |                      |
+| 1   | r1/rsrc       | General        | Source Pointer Register for block instructions.                         |
+| 2   | r2/rdst       | General        | Destination Pointer Register for block instructions                     |
+| 3   | r3/rcnt       | General        | Counter for block instructions                                          |
+| 4   | r4            | General        |                                                                         |
+| 5   | r5            | General        |                                                                         |
 | 6   | r6/fbase      | General        |                        Stack Frame Base Address                         |
 | 7   | r7/sptr       | General        |                    Stack Pointer/Frame Head Address                     |
 | 8   | r8            | General        |                                                                         |
@@ -42,7 +42,7 @@ A copy of the license is included in the repository, under the file entitled LIC
 | 15  | r15/link      | General        |                        Fast Call Return Address                         |
 | 16  | ip            | Readonly[^1]   |                           Instruction Pointer                           |
 | 17  | flags         | Flags          |                            Processor Status                             |
-| 63  | reserved      | Reserved       | Undefined register. Will not be given meaning in a future version |
+| 63  | reserved      | Reserved       | Undefined register. Will not be given meaning in a future version       |
 | 128 | cr0           | Supervisor     |                            Processor Control                            |
 | 129 | cr1/page      | Supervisor     |            Physical Address of the Virtual Memory Page Table            |
 | 130 | cr2/flprotect | Supervisor     |                  Supervisor Write protected flag bits.                  |
