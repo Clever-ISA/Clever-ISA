@@ -1,0 +1,7 @@
+bit,name,extension
+0-2,RND,X-float
+4,DENORM,X-float
+8-15,EXCEPT,X-float
+16-23,EMASK,X-float
+24,EMASKALL,X-float
+25-26,XOPSS,X-float

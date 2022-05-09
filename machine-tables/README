@@ -1,0 +1,7 @@
+Clever-ISA Machine Tables
+===================================================
+The csv files in this folder are a machine parsable list of instructions, registers, register bitfields, and Version Information.
+
+Note: These tables are not normative - in the event of a conflict between the extension specifications and these tables, the extension specifications take precedence. Some entries in the tables are for extensions that are not included in any version of the specification
+
+

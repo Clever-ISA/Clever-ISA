@@ -1,0 +1,6 @@
+val,name,Extension
+0,To Inf,X-float
+1,To -Inf,X-float
+2,To 0,X-float
+3,Half Up,X-float
+4,Half To Even,X-float

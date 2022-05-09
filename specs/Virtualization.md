@@ -170,7 +170,7 @@ neither hret nor hresume consistute a branch within the virtual machine for the 
 
 ### Virtual Machine Creation
 
-Opcodes: 0xfda
+Opcodes: 0xe00
 
 Operands: 1
 
@@ -189,7 +189,7 @@ Supervisor Exceptions:
 If a Hypervisor Exception occurs, no Supervisor Exception occurs. 
 
 Operations:
-- 0xfda (vmcreate): Reads the address of a vmcs structure from the operand, then creates a new virtual machine as described by the vmcs structure. Control is transfered to that virtual machine at the value in vmcs.vmregs[16]. 
+- 0xe00 (vmcreate): Reads the address of a vmcs structure from the operand, then creates a new virtual machine as described by the vmcs structure. Control is transfered to that virtual machine at the value in vmcs.vmregs[16]. 
 
 The maximum number of hypervisors supported by a CPU is machine-specific, but a machine conforming to these extensions supports at least 1 on each CPU. There may be a different limit across all CPUs and on each individual CPU. Violating either limit causes a PROT exception.
 
@@ -199,7 +199,7 @@ Virtual Machines are confined to the CPU that creates them, using a vm context i
 
 ### Virtual Machine Disposal
 
-Opcodes: 0xfdb
+Opcodes: 0xe01
 
 Operands: 0
 
@@ -208,7 +208,7 @@ Hypervisor Exceptions:
 - PROT, if the vm context identifier in r0 is not a valid vm context identifier.
 
 Operations:
-- 0xfdb (vmdestroy): Disposes of the virtual machine given by the vm context identifier in r0. The virtual machine cannot be resumed and no longer counts against the limits described in "Virtual Machine Creation".The vm context identifier may be subsequently reused by the CPU.
+- 0xe01 (vmdestroy): Disposes of the virtual machine given by the vm context identifier in r0. The virtual machine cannot be resumed and no longer counts against the limits described in "Virtual Machine Creation".The vm context identifier may be subsequently reused by the CPU.
 
  The behaviour is undefined if a hypervisor attempts to resume a Virtual Machine that was destroyed by this instruction. 
 
