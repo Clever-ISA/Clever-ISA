@@ -1,7 +1,7 @@
 extension,version,indicated,enabled
 X-main,1.0,cpuex2.V,--
 X-float,1.0,cpuex2.FP,cr0.FPEN
-X-float-ext,cpuex2.FP,cr0.FPEN
+X-float-ext,1.0,cpuex2.FP,cr0.FPEN
 X-vector,1.0,cpuex2.VEC,cr0.VEC
 X-rand,--,cpuex2.RAND,cr0.XMRAND
 X-virtualization,--,cpuex2.VIRT,--
