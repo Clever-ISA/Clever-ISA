@@ -998,21 +998,48 @@ The number of levels (and width of the highest level level) is determined by the
 * The fifth level table can address 2^57, or 144115188075855872 bytes. It is used with cr0.PTL>2, and has size 256 when cr0.PTL=3, which can address 2^56 or 72057594037927936 bytes.
 * The sixth level table can address 2^64, or 18446744073709551616 bytes. It is used when cr0.PTL=4, and has size 128. 
 
+The first level page table is known as the lower page table. Every page table above it is known as a nested page table. Entries in nested page tables are called nested page entries. Entries in the first level page table are lower page entries.
+
 The lower 12 bits of each table entry are used as a bitfield, as follows:
 
 
 
 | bit (mask)     | Name (id)                   | Description                                            |
 | -------------- | --------------------------- | ------------------------------------------------------ |
-| 0  (0x001)     | Present (PR)                | Set if the page entry is mapped to a physical address  |
-| 1  (0x002)     | Writeable (WR)              | Set if the page entry permits writing                  |
-| 2  (0x004)     | No Execute (NX)             | Set if the page prohibits instruction fetches          |
-| 3  (0x008)     | Execution Mode (XM)         | Set if the page can be accessed from flags.XM=1        |
-| 4  (0x010)     | Supervisor No Execute (SXP) | Set if executing the page with flags.XM=0 should trap  |
+| 0-1  (0x003)     | Page Permissions (PERM)           | Set to the permissions of the page  |
+| 2  (0x004)     | Execution Mode (XM)         | Set if the page can be accessed from flags.XM=1        |
+| 3 (0x008)      | Execution Mode Mirror (XMM) | Set to the save value as bit 3
+| 4  (0x010)     | Supervisor No Execute (SXP) | Set if executing the page with mode.XM=0 should trap  |
 | 10-12 (0x1C00) | Supervisor Use (OSSU)       | These bits are reserved for a Supervisior specific use |
 
-All other flag bits are reserved and must be zero. Bits 1 and 2 are reserved for all levels other than the first. Attempting to access a page with a reserved bit set triggers a PF. 
-If a bit is set for any level above the first, it applies to all pages below that level. 
+All other flag bits are reserved and must be zero. Only values 0 or 1 are valid for PERM for nested page tables.
+ Attempting to access a page with a reserved bit set triggers a PF. 
+If XM or SXP is set on a nested page entry, it applies to all nested and lower page entries reached from that level page table, recursively. 
+
+For Lower Page Entries, the PERM field is given by the following bitfield
+
+| Value | Name  | Description |
+|-------|-------|-------------|
+| 0     | EMPTY | Indicates the page is empty/unmapped|
+| 1     | READ  | Indicates that only read access is granted to the page|
+| 2     | WRITE | Indicates that write access is granted to the page|
+| 3     | EXEC  | Indicates that execute access is granted to the page|
+
+Note: Read access is granted for all values other than EMPTY.
+
+Accessing an EMPTY page, performing a write to a page that does not have WRITE permission, or executing instructions from a page that does not have EXEC permission triggers PF.
+
+
+For Nested Page Entries, the PERM field is given by the following bitfield
+
+| Value | Name     | Description |
+|-------|----------|-------------|
+| 0     | EMPTY    | Indicates that the nested page entry is unmapped|
+| 1     | PRESENT  | Indicates that the nested page entry is present/mapped|
+
+Note: Permission computations for pages do not depend on the PERM field of followed Nested Page Entries. Only present/not-present is determined by followed Nested Page Entries.
+
+Other values are reserved. Attempting to access a page that violates this constraint triggers PF.
 
 All flag bits in the `page` register are reserved and must be zero. Attempting to enable paging while any bit is set triggers PF. Note that paging will not be enabled if this requirement is violated (cr0.PG=0 will remain true). 
 
