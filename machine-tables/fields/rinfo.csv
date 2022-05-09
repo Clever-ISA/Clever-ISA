@@ -1,0 +1,4 @@
+bit,name,extension
+0-16,ENTROPY,X-rand
+17-18,FAIL,X-rand
+19,REPEAT,X-rand

@@ -1,0 +1,7 @@
+addr,name,extension
+fe80,cpucount,X-main
+ff00-ff7f,cpuregread,X-main
+ff80-ffff,cpuencw,X-main
+7f800000,mxcw,X-virtualization
+7f800001,vmcxid,X-virtualization
+7f800002,vmpctrl,X-virtualization
