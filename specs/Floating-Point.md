@@ -102,7 +102,7 @@ All FP registers have undefined values during startup.
 Opcodes: 0x022-0x026
 Operands: 2
 
-h: For opcodes 0x022-0x026 `[00 0f]`where if `f` is set `flags` is not modified. 
+h: For opcodes 0x022,0x24, and 0x26 `[00 0f]`where if `f` is set `flags` is not modified.  For opcodes 0x023 and 0x025, `[ss i f]` where `ss` corresponds to the number of fractional (`i` clear) or integer (`i` set) bits in the fixed point format.
 
 Operand Constraints: For opcode 0x022-0x023, the destination register shall be a floating-point register. For opcodes 0x024-0x025, the source register shall be a floating-point register. For opcodes 0x026, at least one operand shall be a floating-point register, and neither operand shall be a direct register other than a floating-point register.
 
@@ -143,14 +143,20 @@ Instructions:
 
 floating-point moves use the size of the floating-point operand to determine the format. 
 `size`=1 is not valid for any such operand. 
-For `movf` and `movfd`, the size of both operands are used, and the value is converted from the source format to the destination format.
+For `cvtf` the size of both operands are used, and the value is converted from the source format to the destination format.
 For all operations, IEEE754 binary floating-point format is used for the size of the operand.
 
-Fixed point operands (`movxf` and `movfx`) use the higher half of the value for the integer portion, and the lower half for fractional portion. 
+For fixed point operands (`movxf` and `movfx`), the format is determined by dividing the integer operand width in bits by `exp(3-ss)`. If `i` is set, this becomes the number of leading integer bits, and the remaining portion is the fractional part. Otherwise, this becomes the number of trailing fractional bits, and the remaining portion is the integer part. 
 
 All memory accesses are performed atomically. Note that the entire operation is not required to be atomic.
 
-Overflow caused by `movfsi` and `movfx` yields the maximum (for positive inputs) or minimum (for negative inputs) value of the type. Underflow yields 0. If any operand is a NaN, the result is the minimum value of the type.
+Overflow caused by `movfsi` and `movfx` yields the maximum (for positive inputs) or minimum (for negative inputs) value of the type. Underflow yields 0. If any operand is a NaN, the result is the minimum value of the type.  
+If the input for `movxf`, `movsif`, `movfx`, or `cvtf` cannot be exactly represented, the value is rounded according to `fpcw.RND`, and `INEXACT` is raised.  
+If the input for `movfsi` cannot be exactly represented, the value is truncated (rounded towards zero).  INEXACT is not raised when integer truncation occurs.
+If the input to `movxf`, `movsif`, or `cvtf` is out of range of the destination format, then OVERFLOW is raised, and the result is +/- Infinity. 
+If the input to `movxf` or `cvtf` is too small for the destination format, then UNDERFLOW is raised, and the result is +/-0. 
+
+If the input to `cvtf` is a NaN, then the result is an unspecified NaN of the same type. This occurs even when both operands are of the same format.
 
 ### Floating-point Arithmetic
 

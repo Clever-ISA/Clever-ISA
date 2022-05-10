@@ -30,9 +30,9 @@ opcode,mnemonic,hbits,opcount,extension
 020,movsx,000f,2,X-main
 021,bswap,000f,2,X-main
 022,movsif,000f,2,X-float
-023,movxf,000f,2,X-float
+023,movxf,ssif,2,X-float
 024,movfsi,000f,2,X-float
-025,movfx,000f,2,X-float
+025,movfx,ssif,2,X-float
 026,cvtf,000f,2,X-float
 028,repbi,0000,prefix,X-main
 029,repbc,cccc,prefix,X-main
