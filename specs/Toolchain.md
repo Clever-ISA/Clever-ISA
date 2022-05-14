@@ -193,4 +193,47 @@ Signatures with `double` may be called with a signature using `long double` in e
 
 Each function in this section corresponds with the appropriate instruction X-float-extra applied to the appropriate size floating-point register.
 
+## Inline ASM
 
+Toolchains that support inline assembly should support Clever-ISA as follows in this section.
+The mechanisms under which operands to the expression may be specified are toolchain and language-specific.
+
+### Register Constriants
+
+The following registers should be made available for use with inline assembly for operands
+
+* All general purpose registers other than r6, r7, and r14,
+* All floating-point registers,
+* All vector half and vector pair registers (named separately).
+
+Where it is not necessary to choose specific registers, the following register groups should be available for constraints:
+* general - Each general purpose register
+* float - Each floating-point register
+* vectorhalf - each vector half register
+* vectorhi - each higher-half vector register
+* vectorlo - each lower-half vector register
+* vector - each vector pair
+
+Types which are accepted by each register group, and registers belonging to each group, should be as follows:
+* general - integer, fixed-pointed, and floating-point scalar types, of any standard width up to 64-bit (signed or unsigned)
+* float - floating-point scalar types of widths 16, 32, and 64, when implemented as IEEE754 binary floating-point
+* vectorhalf, vectorhi, vectorlo - integer, fixed-point, and floating-point scalar and vector types with a total size up to 8 bytes
+* vector - integer, fixed-point, and floating-point scalar and vector types with a total size up to 16 bytes
+
+At the option of the toolchain, access to the Z, C, V, M, and P flags may be used to pass boolean types or integer types with a width of 1 bit. If so, the `flag` register group may name these flags.
+
+### Preserved State
+
+Toolchains may assume that the following state is preserved, unless it is indicated in a toolchain-specific manner, that it is not. In the alternative, the toolchain may provide a mechanism to indicate that it is:
+* Each flag in the `flags` register,
+* The exception flags of the `fpcw` register
+
+Additionally, toolchains may assume that the following is preserved, and is not requiured to provide a mechanism to indicate it is not preserved:
+* The mode register
+* The frame pointer (r6) and stack pointer (r7)
+* The rounding mode and extended operation precision size fields of the `fpcw` register
+
+Toolchains may further assume the following is preserved, but may, at its option, provide a mechanism to indicate that it is clobbered:
+* The fast call return address register (r14)
+
+Beyond this, the toolchain may assume that the value of any register that is not mentioned as an output or that is not clobbered in a toolchain-specific manner is preserved by the assembly expression.
