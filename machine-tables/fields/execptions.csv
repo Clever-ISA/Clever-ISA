@@ -1,0 +1,8 @@
+value,name,extension
+0,ABRT,X-main
+1,UND,X-main
+2,PROT,X-main
+3,PF,X-main
+4,XA,X-main
+5,NMI,X-main
+6,FPE,X-float

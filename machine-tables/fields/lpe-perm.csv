@@ -1,0 +1,5 @@
+value,name,extension
+0,empty,X-main
+1,readonly,X-main
+2,writable,X-main
+3,executable,X-main

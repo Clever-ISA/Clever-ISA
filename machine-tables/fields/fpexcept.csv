@@ -1,0 +1,7 @@
+Bit,Name,extension
+0,INVALID,X-main
+1,DIVBYZERO,X-main
+2,OVERFLOW,X-main
+3,UNDERFLOW,X-main
+4,INEXACT,X-main
+5,SIGNAL,X-main

@@ -1,0 +1,7 @@
+bit,name,extension
+0-1,PERM,X-main
+2,XM,X-main
+3,XMM,X-main
+4,SXP,X-main
+9-11,OSSU,X-main
+12-63,PE,X-main

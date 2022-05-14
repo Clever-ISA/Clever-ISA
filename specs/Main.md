@@ -25,11 +25,11 @@ A copy of the license is included in the repository, under the file entitled LIC
 | r   | Register Name | Availability   |                                  Notes                                  |
 | --- | ------------- | -------------- |:-----------------------------------------------------------------------:|
 | 0   | r0/racc       | General        |                                                                         |
-| 1   | r1/rsrc       | General        |Source Pointer Register for block instructions.|
-| 2   | r2/rdst        | General        |Destination Pointer Register for block instructions|
-| 3   | r3/rcnt       | General        | Counter for block instructions |
-| 4   | r4            | General        |                          |
-| 5   | r5            | General        |                      |
+| 1   | r1/rsrc       | General        | Source Pointer Register for block instructions.                         |
+| 2   | r2/rdst       | General        | Destination Pointer Register for block instructions                     |
+| 3   | r3/rcnt       | General        | Counter for block instructions                                          |
+| 4   | r4            | General        |                                                                         |
+| 5   | r5            | General        |                                                                         |
 | 6   | r6/fbase      | General        |                        Stack Frame Base Address                         |
 | 7   | r7/sptr       | General        |                    Stack Pointer/Frame Head Address                     |
 | 8   | r8            | General        |                                                                         |
