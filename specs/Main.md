@@ -352,19 +352,20 @@ For `lea`, the size of the source operand is treated as 64-bit always - the addr
 
 ### No Operation
 
-Opcodes: 0x010-0x012
+Opcodes: 0x010-0x013
 
-Operands: Opcode 0x010, 0. Opcode 0x011, 1. Opcode 0x012, 2.
+Operands: Opcode 0x010, 0. Opcode 0x011, 1. Opcode 0x012, 2. Opcode 0x013, 3.
 
 h: Unused
 
-Exceptions: None
+Exceptions: None.
 
 Operations:
 - 0x010 (nop): Performs no operation.
-- 0x011-0x012 (nop): Performs no operation further than decoding and validating each operand.
+- 0x011-0x013 (nop): Performs no operation further than decoding and validating each operand.
 
 Machines should ensure consistent timing for each no-op instruction, but this timing is not specified. 
+Normal exceptions for instruction and opcode decoding occurs, but no checks are performed on operands. In particular, a nop instruction cannot contain a malformed operand, but could, for example, reference a supervisor register in program execution mode, reference an undefined or reserved register, or refer to unmapped memory via a memory reference or indirect register operand. No memory access is performed by the instruction, and no registers are modified by the instruction.
 
 ### Stack Manipulation
 
