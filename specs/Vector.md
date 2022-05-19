@@ -28,8 +28,9 @@ The floating-point instructions, floating-point registers and cr0.FPEN all refer
 
 ## Vector Registers
 
-These vector extensions define an additional class of register, and, in doing so, expand the register space from 64 to 128. Registers 64-127 are called vector registers. Every even numbered vector register is indicated as `v`*`n`*`l`, with successive values of `n` starting from `0`, and every odd numbered vector register is indicated as `v`*`n`*`h`. A vector pair, labeled `v`*`n`*, consists of the 64-bits from `v`*`n`*`l`, followed by the 64-bits from `v`*`n`*`h`.
-Vector registers have register class `VectorHalf`, and can be used in any instruction that expects a general purpose registers or as floating-point registers. VectorHalf registers are simple and are accessible only if `cr0.VEC=1`. 
+These vector extensions define an additional class of register. Registers 64-95 are called vector registers. Every even numbered vector register is indicated as `v`*`n`*`l`, with successive values of `n` starting from `0`, and every odd numbered vector register is indicated as `v`*`n`*`h`. A vector pair, labeled `v`*`n`*, consists of the 64-bits from `v`*`n`*`l`, followed by the 64-bits from `v`*`n`*`h`.
+Vector registers have register class `VectorHalf`, and can be used in any instruction that expects a general purpose registers or as floating-point registers. 
+For the purposes of determining operand contraints, a VectorHalf register may be used in place of a floating-point or general purpose register.
 
 ## Changes to Operand Structure
 
@@ -41,10 +42,10 @@ The notable changes are as follows: The third most significant bit (previously) 
 
 ### Vector Register Operands
 
-A new class of operand, modifying the Register operand structure is defined for use in vectorized instructions. The structure of vector register operands is the following `[001 y ssss x 01 rrrrr]`
+A new class of operand, modifying the Register operand structure is defined for use in vectorized instructions. The structure of vector register operands is the following `[001 y ssss rrrrrrrr]`
 
 Where: `y` and `x` are reserved for future use, `ssss` is the extended size control value=`log2(size)`, and `1rrrrr` is the vector register number discarding the least significant bit. 
-Vector Register Operands address pairs of vector registers, according to `rrrrr`: For example, rrrrr=00000 accesses `v0` and `v0h`. Non vector registers may not be address using this operand type, and 
+Vector Register Operands address pairs of vector registers, according to `rrrrrrrr`: For example, rrrrrrrr=00000 accesses `v0l` and `v0h`. Non vector registers may not be address using this operand type, and the least significant bit shall be set to `0`
 
 `ssss` may be at most `4`, though future extensions may permit values greater than 4.
 
