@@ -60,8 +60,8 @@ A copy of the license is included in the repository, under the file entitled LIC
 | 141 | cpuex5        | CPUInfo        |     Processor Extension Availability Field 5. Contains the value 0      |
 | 142 | cpuex6        | CPUInfo        |     Processor Extension Availability Field 6. Contains the value 0      |
 | 143 | mscpuex       | CPUInfo        |        Machine Specific Processor Extension Availability Field.         |
-| 144 | cr8           | Reserved       |                                                                         |
-| 145 | cr9           | Reserved       |                                                                         |
+| 144 | fcode           | Supervisor   | Set when certain exceptions are triggers |
+| 145 | pfcharp | Supervisor       | Set to the virtual address to store information about the page fault to |
 | 146 | cr10          | Reserved       |                                                                         |
 | 147 | cr11          | Reserved       |                                                                         |
 | 148 | msr0          | Supervisor[^3] |                  Machine Specific Control Register 0.                   |
@@ -941,12 +941,13 @@ struct itab_entry{
     uint64_t reserved;
 };
 struct itab{
-    size_t extent;
+    uint64_t extent;
+    uint64_t reserved[3];
     struct itab_entry entry[extent/sizeof(struct itab_entry)];
 };
 ```
 
-The value of itbp shall be the physical address of an itab structure. Each index in itab is associated with a particular interrupt or exception number.
+The value of itabp shall be the physical address of an itab structure. Each index in itab is associated with a particular interrupt or exception number. `itabp` must be aligned to 32 bytes or the CPU resets when an exception occurs.
 
 There may be up to 64 entries in the itab. The first 16 entries are used for processor exceptions. 
 The next 16 entries are software interrupts. 
@@ -971,6 +972,22 @@ num | Name (ID) | Description
  
 [^5]: If an exception occurs while servicing ABRT, the processor resets.
 [^6]: Interrupt 16 is not an Exception. Failing to service Debug Trap does not raise ABRT.
+
+#### Exception Codes
+
+When certain exceptions occur, the `fcode` register is set by the CPU to certain information about the exception. When an exception has not occurred, the value is preserved from the last time an exception occurs. After any exception, either a value has been written to the register as defined in this section, or the register has an undefined state.
+
+| Exception | Value Written |
+|-----------|---------------|
+| ABRT      | 0             |
+| PROT      | The protection error code* |
+| PF        | The virtual (paging enabled) or physical (paging disabled) address that was involved in the access |
+| XA        | The address that was attempted to be executed |
+
+When a Page Fault Occurs, additional information may be stored to address in the pfchar register (See [Paging Faults](#paging-fault)).
+
+
+*All existing sources of PROT set the value to `0`, but future extensions may cause PROT exceptions that. Supervisor code may assume that if it enables no extensions for user code and does not use instructions from any extensions, that it will recieve a value of `0` in PROT handlers, but should not assume such about any particular extension it might enable.
 
 
 ## Init Procedure
@@ -1072,6 +1089,10 @@ Note: If the value of `page` is changed, such that any reserved bit is set, the 
 As handling PF will cause a page fault, ABRT will be triggered, which likewise cannot be handled, and the processor will reset. 
 
 Changing the `page` register or modifying `cr0.PG` has the same effect as the `dflush` instruction followed by the `ptlbf`. 
+
+### Paging Faults
+
+A paging fault occurs in a number of situtations, when the paging rules of Clever-ISA are not followed by the program code. 
 
 ### Paging and Execution
 
