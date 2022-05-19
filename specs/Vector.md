@@ -44,8 +44,8 @@ The notable changes are as follows: The third most significant bit (previously) 
 
 A new class of operand, modifying the Register operand structure is defined for use in vectorized instructions. The structure of vector register operands is the following `[001 y ssss rrrrrrrr]`
 
-Where: `y` and `x` are reserved for future use, `ssss` is the extended size control value=`log2(size)`, and `1rrrrr` is the vector register number discarding the least significant bit. 
-Vector Register Operands address pairs of vector registers, according to `rrrrrrrr`: For example, rrrrrrrr=00000 accesses `v0l` and `v0h`. Non vector registers may not be address using this operand type, and the least significant bit shall be set to `0`
+Where: `y` is reserved for future use, `ssss` is the extended size control value=`log2(size)`, and `1rrrrr` is the vector register number discarding the least significant bit. 
+Vector Register Operands address pairs of vector registers, according to `rrrrrrrr`: For example, rrrrrrrr=0 accesses `v0l` and `v0h` (together called `v0`). Non vector registers may not be address using this operand type, and the least significant bit shall be set to `0`
 
 `ssss` may be at most `4`, though future extensions may permit values greater than 4.
 
