@@ -867,8 +867,8 @@ Exceptions:
 Flags: 0x806 Sets Z, M, and P based on the value read
 
 Instructions:
-- 0x806 (in): Reads `ss` bytes from the I/O Device at the address given in `r1` into `r0`.
-- 0x807 (out): Writes `ss` bytes from `r0` to the I/O Device at the address given in `r0`.
+- 0x806 (in): Reads `ss` bytes from the I/O Device at the address given in `r2` into `r0`.
+- 0x807 (out): Writes `ss` bytes from `r0` to the I/O Device at the address given in `r2`.
 
 Both opcodes 0x806 and 0x807 may be modified by opcodes 0x028 and 0x029 (repc and repi). If so, the operation is performed until the condition is satisifed, and the value is read from `[r4]` (`out`) or written to `[r5]` (`in`) (`ss` is added to the corresponding register after the assignment) instead of `r0`.
 
