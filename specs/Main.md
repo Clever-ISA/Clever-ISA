@@ -870,7 +870,7 @@ Instructions:
 - 0x806 (in): Reads `ss` bytes from the I/O Device at the address given in `r1` into `r0`.
 - 0x807 (out): Writes `ss` bytes from `r0` to the I/O Device at the address given in `r0`.
 
-Both opcodes 0x806 and 0x807 may be modified by opcodes 0x028 and 0x029 (repc and repi). If so, the operation is performed until the condition is satisifed, and the value is read from `[r4]` (`ss` is added to `r4` after) instead of `r0`.
+Both opcodes 0x806 and 0x807 may be modified by opcodes 0x028 and 0x029 (repc and repi). If so, the operation is performed until the condition is satisifed, and the value is read from `[r4]` (`out`) or written to `[r5]` (`in`) (`ss` is added to the corresponding register after the assignment) instead of `r0`.
 
 I/O Device Addresses are 64-bit values, which correspond to some identifier assigned to devices. The I/O Device Addresses from 0x00000000-0xffffffff are reserved for use with this specification, future versions, and extensions thereof.
 All other device addresses have machine specific use
