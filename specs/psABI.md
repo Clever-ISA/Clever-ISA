@@ -23,7 +23,7 @@ The size of any pointer type shall be 8.
 
 ### Primitive Type Alignment
 
-The alignment of each primitive type (`char`, `signed char`, `short`, `int`, `long`, `long long`, `float`, `double`, `long double`, unsigned counterparts thereof, and pointer types) shall all be equal to the size of the type. If an implementation may define extended integer or floating-point types, then the alignments of those types shall be equal to the size, up to a maximum alignment of 128.
+The alignment of each primitive type (`char`, `signed char`, `short`, `int`, `long`, `long long`, `float`, `double`, `long double`, unsigned counterparts thereof, and pointer types) shall all be equal to the size of the type. If an implementation may define extended integer or floating-point types, then the alignments of those types shall be equal to the size, up to a maximum alignment of 16.
 
 
 ### Enumeration Base Type
@@ -79,7 +79,11 @@ The bit fpcrw.EMASKALL shall be set when the program starts up, and shall not be
 
 The `jmp_buf` type shall be a typedef for `unsigned long[32]`
 
+### Vector types
 
+The vector types `__v128`, `__v128i`, and `__v128f` shall be 16-bytes in size and 16-byte aligned.
+
+The vector types `__v256`, `__v256i`, and `__v256f` shall be 32-bytes in size and 16-byte aligned.
 
 ## Calling Convention
 
@@ -105,7 +109,7 @@ For the purposes of determining how to pass a type to a function, or return it f
 ##### Scalar Types
 
 The classification of scalar types is as follows:
-* All integer types have class INTEGER.
+* All integer and vector types have class INTEGER.
 * All pointer types have class INTEGER.
 * All floating-point types have class FLOAT, except that an extended 128-bit binary floating-point type or 8-bit binary floating-point type shall have class INTEGER. 
 * Enumeration types have class INTEGER.
