@@ -7,7 +7,7 @@ typedef long ptrdiff_t;
 #ifdef __SIZEOF_INT128__
 typedef struct{ __uint128 __inner;} max_align_t;
 #else
-typedef struct{ unsigned long long __inner;} max_align_t;
+typedef struct{ unsigned long long __inner;} __attribute__((__aligned__(16))) max_align_t;
 #endif
 
 #if __has_include_next(<stddef.h>)
