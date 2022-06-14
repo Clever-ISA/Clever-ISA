@@ -1092,6 +1092,50 @@ Changing the `page` register or modifying `cr0.PG` has the same effect as the `d
 
 A paging fault occurs in a number of situtations, when the paging rules of Clever-ISA are not followed by the program code. 
 
+The pfchar register can point to 16 bytes of virtual memory that gets initialized by the processor when a page fault occurs. If the pfchar register is set to zero, this does not occur. The structure is given by the following definition:
+
+```c
+struct fault_information{
+    uint64_t pref;
+    uint8_t plevel;
+    uint8_t access_kind;
+    uint16_t status;
+    uint16_t reserved[2];
+};
+```
+
+`pref` is set to the value of the page entry that caused the fault, at whichever level. If the page fault is caused by an out-of-range virtual or physical address, the pref is set to `0`.  
+`plevel` is set to the level that caused the page fault, where the lowest level is 0, and the levels increase upwards. If the page fault is caused by an out-of-range virtual or physical address, the plevel is set to `0`.  
+`access_kind` is set to the value indicating what kind of access caused the fault, where `0` is a read access, `1` is a write access, `2` is an instruction fetch. 
+ Additionally the special value `0xff` indicates a non-present memory fault, that occurs from accessing memory unavailable to the system.
+`status` is set to the status flags about the access, indicated as follows:
+* `0x0001` (XM): Set to the value of the mode.XM flag when the access occured
+* `0x0002` (XMM): Set to a copy of the XM flag in status
+* `0x0100` (VALIDATION_ERROR): Flag set if the fault occurs as a result of failed validation of a nested or lower page entry.
+* `0x0200` (NON_CANONICAL): Flag set if the fault occurs as a result of a non-canonical (out-of-range) virtual address. It is also set for out-of-range physical addresses
+* `0x0400` (NON_PAGED): Flag set if the fault occurs while paging is disabled - either an out-of-range physical address or a non-present memory fault
+* `0x0800` (PREVENTED): Flag set if the fault occurs as a result of a failed access blocked by the Supervisor Execution Prevention feature or a similar feature
+* `0x1000` (NESTED): Flag set if the fault occurs in a nested page entry, rather than a lower page entry. This is equivalent to the check `plevel>0`.
+
+All other flags are reserved for future use and are set to `0`. The supervisor should not inspect these bits and should consider that the may have any value
+
+The 4 bytes in `reserved` are reserved for future use and are set to `0`. The supervisor should not inspect those bytes and should consider that they may have any value
+
+The write that occurs is totally atomic. 
+If the pfchar register is not aligned to 16 bytes, or a page fault occurs writing to the pointee of pfchar, ABRT and no memory is modified. If a page fault otherwise occurs when triggering ABRT, no write occurs.
+
+#### Non-Present Memory
+
+Accessing physical memory may exceed limits on storage available to the system. If so, the system reports a page fault with an access_kind of non-present memory. 
+
+There are two cases the under which the system may report non-present memory:
+* The access reached physical memory that is not attached to any memory available to the system (For example, it exceeds the size of physical memory installed or addressible),
+* The access reached a page dedicated for Memory Mapped I/O and the particular access does not reach a device attached to the system. 
+
+The former case may also be used by emulators, to indicate that attempts to allocate memory for use by the emulated system failed. 
+
+The system shall ensure that at the very least the first 64 kb of memory is available, and that the first 
+
 ### Paging and Execution
 
 In virtual addressing mode, certain constraints apply to code being executed under most conditions. 
