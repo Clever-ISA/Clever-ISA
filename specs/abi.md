@@ -21,6 +21,8 @@ The sizes of types `float` and `double` shall be 4 and 8. `long double` shall be
 
 The size of any pointer type shall be 8. 
 
+Toolchains may support an additional ILP32 abi. On this ABI, `long` and the size of pointers shall be 4, not 8. `long long` remains 8 bytes in size
+
 ### Primitive Type Alignment
 
 The alignment of each primitive type (`char`, `signed char`, `short`, `int`, `long`, `long long`, `float`, `double`, `long double`, unsigned counterparts thereof, and pointer types) shall all be equal to the size of the type. If an implementation may define extended integer or floating-point types, then the alignments of those types shall be equal to the size, up to a maximum alignment of 16.
@@ -49,10 +51,10 @@ If the implementation of this ABI defines a type `_Float16` or `__float16`, then
 ### Floating-point environment
 
 
-The fenv_t type is a typedef for `unsigned long`. The fexcept_t type is a typedef for `unsigned short`.
+The fenv_t type is a typedef for `unsigned long long`. The fexcept_t type is a typedef for `unsigned short`.
 
-The fegetenv function shall store the value of `fpcrw` in the `unsigned long` value pointed  to by it's parameter.
-The fesetenv function shall load the value of `fpcrw` from the `unsigned long` value pointed to by it's parameter.
+The fegetenv function shall store the value of `fpcrw` in the `unsigned long long` value pointed to by it's parameter.
+The fesetenv function shall load the value of `fpcrw` from the `unsigned long long` value pointed to by it's parameter.
 
 The constant values defined by `<fenv.h>` are as follows (taken from the tables used for fpcrw):
 ```c
