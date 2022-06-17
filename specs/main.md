@@ -305,10 +305,13 @@ Instructions:
 Opcodes: 0x006-0x007, 0x040, 0x048
 Operands: None
 
-h: `[ss wf]`, where `ss` is log2(size) of the operation, as though for a register operand size control. `w` shall be set only for opcode 0x007. If `f` is set, then `flags` is not modified. 
+h: `[ss wf]`, where `ss` is log2(size) of the operation, as though for a register operand size control. `w` shall be set only for opcode 0x007 and 0x048. If `f` is set, then `flags` is not modified. 
 
 Flags: Sets C, M, V, and Z according to the result of the operation if the `f` bit is not set in `h`.
 
+Exceptions:
+- UND: If w is set in h for opcodes 0x006 or 0x040
+- DIV: For opcodes 0x007 and 0x048, if r3 is 0
 
 Instructions:
 - 0x006 (mul): Multiplies r0 and r3, storing the low order bits in r0, and the high order bits in r3.
@@ -963,7 +966,8 @@ num | Name (ID) | Description
  3  | Page Fault (PF) | Issued when a memory access or paging violation occurs, or from Physical Memory Mode when an out-of-range physical address is referenced.
  4  | Execution Alignment (XA) | Issued when a system attempts to execute an instruction that isn't aligned to 2-bytes.
  5   | Non Maskable Interrupt (NMI) | Issued when an interrupt is raised by hardware that cannot be masked.
- 6-15| reserved  | Exceptions up to 15 may be assigned a future meaning.
+ 6   | Division by Zero (DIV) | Issued when dividing by zero
+ 7-15| reserved  | Exceptions up to 15 may be assigned a future meaning.
  16 | Debug Trap[^6]| The first software interrupt. May be given special meaning in the future relating to trapping breakpoints for debuggers.
  
  

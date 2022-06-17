@@ -285,7 +285,7 @@ Instructions:
 
 ## Floating Point Exceptions
 
-Exception 6 (FPE) shall be raised when a floating-point operation causes an unmasked floating-point exception and cr0.FPEXCEPT=1. 
+Exception 7 (FPE) shall be raised when a floating-point operation causes an unmasked floating-point exception and cr0.FPEXCEPT=1. 
 
 If cr0.FPEXCEPT=0, then PROT shall be raised instead of FPE.
 
