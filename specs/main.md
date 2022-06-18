@@ -243,7 +243,7 @@ Certain instructions are reffered to as being totally atomic (for example, instr
 ### Execution Memory Model
 
 Instructions executed by the program fetched from `ip`, as well as operands fetched for that execution, are exempt from the above rules. If instructions a CPU executes modifies memory concurrently being executed by a different CPU, the results of those writes, whether the writes are obseved completely (tearing), and the timing of those writes are unspecified. It is ensured that undefined results do not occur.
-Additionally, writes from within a CPU to the instruction stream executed by that CPU are not guaranteed to be reflected until that CPU either executes a iflush or flall instruction, or executes a branch instruction that is taken, except that ifcall and ifjmp may synchronize the instruction stream. However, it is guaranteed that if any write from a particular is observed to a particular instruction opcodes or operand, then the entire write is observed by that particular instruction opcode or operand (that is, it does not tear within a particular instruction word), but a partial write may be observed accross instruction opcodes or operands. 
+Additionally, writes from within a CPU to the instruction stream executed by that CPU are not guaranteed to be reflected until that CPU either executes a iflush or flall instruction, or modifies the `mode` register (for example, via the `syscall` instruction). However, it is guaranteed that if any write from a particular is observed to a particular instruction opcodes or operand, then the entire write is observed by that particular instruction opcode or operand (that is, it does not tear within a particular instruction word), but a partial write may be observed accross instruction opcodes or operands. 
 The fetching of entire immediate values, may tear under the conditions above on every aligned 2 byte boundery.
 
 Each discrete element of the instruction stream is a multiple of two bytes. These elements, and thus the value of the `ip` register, is aligned to 2 bytes. 
@@ -669,7 +669,6 @@ Exceptions:
 Taking a conditional branch transfers control to destination if the condition is satisfied, and otherwise execution continues from the following instruction. 
 Immediately after the control transfer, `ip` will be equal to the desintation of the branch.
 When a branch is taken, modifications to memory are guaranteed to be reflected in the code that control is transfered to (including modifications to the page table, or modification of `cr0.PG`). 
-This also synchronizes-with modifications propagated by a `fence` instruction or a read-write synchronization edge from other CPUs. 
 The destination of a branch must be aligned to a multiple of two bytes. 
 
 
@@ -725,18 +724,20 @@ Exceptions:
 Instructions:
 - 0x0 (jmp): Unconditional normal branch.
 - 0x1 (call): Direct call, pushing the ip of the next instruction to the stack.
-- 0x2 (fcall): Direct call, storing the ip of the next instruction in r14. Does not synchronize instruction stream with memory.
+- 0x2 (fcall): Direct call, storing the ip of the next instruction in r14. 
 - 0x3 (ret): pops an 8-byte value from from the stack and branches to that address.
 - 0x4 (scall): Supervisor Call (See (Supervisor Call)[#Supervisor-Call])
 - 0x5 (int): Raises the software interrupt `iiii` (See (Software Interrupts)[#Software-Interrupts])
 - 0x8 (ijmp): Indirect normal branch to the destination.
-    - 0x8 with h=0xe (fret): Fast Procedure Call Return. Does not synchronize instruction stream with memory.
-    - 0x8 with h=0xf (ifjmp): Indirect Fast Jump. Does not synchronize instruction stream with memory.
+    - 0x8 with h=0xe (fret): Fast Procedure Call Return.
+    - 0x8 with h=0xf (ifjmp): Indirect Fast Jump.
 - 0x9 (icall): Indirect call to the destination, pushing the ip of the next instruction to the stack.
-- 0xA (ifcall): Indirect fast call to the address in r15, storing the ip of the next instruction in r14. Does not synchronize instruction stream with memory.
+- 0xA (ifcall): Indirect fast call to the address in r15, storing the ip of the next instruction in r14. 
 - 0xB (jsm): Jump and Set flags. Reads r0 and stores the result in `mode`. 
 - 0xC (callsm): Call procedure and set mode. If v is set in `h`, then pushes `mode` before `ip`. Then loads `mode` with the value in `r0. 
 - 0xD (retrsm): Return from procedure and restore `mode`. pops an 8-byte value from the stack and returns to that address. Prior to returning, also pops `mode`. 
+
+The `jsm`, `callsm`, and `retrsm` instructions always write to the `mode` register, even if no change occurs - thus these instructions will synchronize the instruction stream with memory before executing code at the destination.
 
 ##### Supervisor calls
 
@@ -771,6 +772,8 @@ Otherwise, a stack supervisor call is performed as follows:
 - The return address is pushed to the stack,
 - control is transfered to the absolute address in scdp.
 
+The `scall` instructions always write to the `mode` register, even if no change occurs - thus these instructions will synchronize the instruction stream with memory before executing code at the destination.
+
 
  
 ## Supervisor Instructions
@@ -796,12 +799,13 @@ Opcode 0xFC6 (scret) returns from a supervisor call. If sccr.fc is set, then the
 - Control is transfered to the address loaded into `ip`
 
 
-Opcode 0xFC7 (reti) performs the following actions:
+Opcode 0xFC7 (reti) and Opcode 0xFC6 (when sccr.fc is not set) performs the following actions:
 - `ip` is popped
 - `mode` is popped
-- `sp` is popped
+- `r7` is popped
 - Control resumes at `ip`
 
+The `scret` and `reti` instructions always write to the `mode` register, even if no change occurs - thus these instructions will synchronize the instruction stream with memory before executing code at the destination.
 
 ### Machine Specific Instructions
 
