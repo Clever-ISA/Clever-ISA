@@ -131,27 +131,23 @@ Exceptions:
 Instructions:
 - 0x401 (vmov): Moves a 16-byte value into the destination vector operand
 
-## Bulk Vector Register Storage
+## Shuffle Vector 
 
-Opcodes: 0x402-0x405
-Operands: Opcodes 0x402 and 0x404, 1. Opcodes 0x403 and 0x405, 0.
-h: Unused and shall be 0
+Opcodes: 0x402
+Operands: 2
+h: [00 ss], where `ss` is the element size.
 
-Operand Constraints: 0x402 and 0x404, the operand shall be an indirect register or a memory reference.
+Operand Constraints: No operand may be a memory reference. The first operand must be a vector register, and the second operand must not be a vector register or immediate of size 16
 
 Exceptions:
 - UND, if `cr0.VEC=0`
 - UND, if any operand constraint is violated
-- PF, if any memory reference is invalid or an out-of-range virtual address
-- PF, if an access violation occurs
-- PF, if a memory reference is an invalid physical address.
+- PROT, if the permutation given specifies an out-of-range element for the element size and vector size
 
-Operations:
-- 0x402 (stovr): Stores each vector register pair in 512 bytes of consecutive storage starting at the memory reference given by the operand
-- 0x403 (pushvr): Pushes each vector register pair in reverse order to the stack.
-- 0x404 (resvr): Restores each vector register pair from the 512 bytes of consecutive storage starting at the memory reference given by the operand.
-- 0x405 (popvr): Pops each vector register pair from the stack.
+Instructions:
+- 0x402 (vshuffle): Shuffles the elements of the first operand according to the permutation given in the second operand.
 
-Each operation is relatively atomic with other memory operations (Note: in particular, `pushvr` and `popvr` only perform one memory operation)
+The permutation is made up of 2-8 4-bit location references. The nth 4-bit reference from the Least significant bit refers to the nth element from the least significant element of the destiniation vector. Additional references are ignored. The value in the reference is the element number (from the least significant) in the source vector.
+
 
 
