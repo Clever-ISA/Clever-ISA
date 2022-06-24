@@ -11,7 +11,7 @@ A supervisor may obtain information about the I/O capabilities of the system by 
 The structure of the result is as follows:
 
 | Bit | Name | Description |
-|=====|======|=============|
+|-----|------|-------------|
 | 0   | EN   | I/O Subsystem Enabled. Always set to 1 by machines complying with the spec |
 | 1   | TIMER| CPU Interrupt Timer Available |
 | 2   | ACPI | Advanced Control and Power Interface available | 
@@ -30,7 +30,7 @@ The CPU Interrupt Timer Registers are available via the I/O Addresses 0x7f000001
 CPU Interrupt Timer Information Register:
 
 | Bits    |  Name   | Description |
-|=========|=========|=============|
+|---------|---------|-------------|
 | 0-35    | FREQ    | Integer Frequency (in Hz) of the timer's tick|
 | 36-55   | MAXINT  | The maximum supported interval (in ticks). 0 means no limit|
 
@@ -40,7 +40,7 @@ All other bits are reserved for future use and shall be set to `0`.
 CPU Interrupt Timer Configuration Register:
 
 | Bits   | Name    | Description |
-|========|=========|=============|
+|--------|---------|-------------|
 | 0-1    | MODE    | The Mode of the CPU Interrupt Timer. See enumeration below |
 | 2-7    | CTRL    | Field for Controlling the resulting operation (depending on mode)|
 | 32-63  | INTERVAL| The Interval (in ticks) between operations, minus 1.|
@@ -50,7 +50,7 @@ Other bits are reserved, modifying them has undefined behaviour.
 The MODE field takes on one of the following values:
 
 | Value | Name  | Description |
-|=======|=======|=============|
+|-------|-------|-------------|
 | 0     | DISABLE| No operation is performed. CTRL is unused |
 | 1     | INT   | Hardware Interrupt Issued. CTRL is value between 0 and 31 which corresponds to the hardware interrupt issued (32-interrupt table index)|
 
@@ -66,7 +66,7 @@ Attached General Purpose I/O pins may be controlled via I/O Addresses 0x7f000008
 Reading from 0x7f000008 (GPIO Info) yields the following Value:
 
 | Bits  | Name   | Description  |
-|=======|========|==============|
+|-------|--------|--------------|
 | 0-9   | PINCT  | Number of GPIO pins attached to the system |
 | 10-15 | SELKD  | The Kind of the selected configuration pin |
 | 16-19 | MAXCFG | The maximum number of pins that can be configured at once |
@@ -76,7 +76,7 @@ Other bits are reserved and shall be set to 0.
 SELKD is `0` when no pin or an undefined pin is selected by 0x7f000009. Otherwise, it's set to the kind of pin, given as follows:
 
 | Value | Name |
-|=======|======|
+|-------|------|
 | 0     | Vcc (power) pin |
 | 1     | Digital High/Low Value only |
 | 2     | Digital Logic Value |
@@ -90,7 +90,7 @@ Writing to 0x7f000009 is GPIO Configuration and Selection Register.
 The lower 10 bits of of this register can be written to for configuration. The bitfield is as follows:
 
 | Bits  | Name  | Description |
-|=======|=======|=============|
+|-------|-------|-------------|
 | 0-9   | PINNO | The Number of the pin to select/configure|
 | 10-15 | CFGMD | The mode to configure the pin to |
 | 16-19 | CFGPOS| The position in the configuration array for the pin|
@@ -116,7 +116,7 @@ Registers are not allocated for modes that are not used by any active configurat
 The values for logic pins are as follows:
 
 | Value | Name       |
-|=======|============|
+|-------|------------|
 | 0     | Strong Logic Low  |
 | 1     | Weak Logic Low |
 | 2     | High Impedance |
