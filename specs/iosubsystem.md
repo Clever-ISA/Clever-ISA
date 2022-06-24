@@ -13,9 +13,9 @@ The structure of the result is as follows:
 | Bit | Name | Description |
 |=====|======|=============|
 | 0   | EN   | I/O Subsystem Enabled. Always set to 1 by machines complying with the spec |
-| 1   | TIMER | CPU Interrupt Timer Available |
+| 1   | TIMER| CPU Interrupt Timer Available |
 | 2   | ACPI | Advanced Control and Power Interface available | 
-| 3   | PCI | Peripheral Component Interconnect Available |
+| 3   | PCI  | Peripheral Component Interconnect Available |
 | 4   | GPIO | General Purpose I/O pins Available |
 
 
