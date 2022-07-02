@@ -2,7 +2,12 @@
 
 This document lists standard mechanisms for interacting with System Devices from Clever-ISA processors. 
 
-Compliance with this document is optional, but the io address space defined herein is reserved and must only be be used with the behaviour described here
+Compliance with this document is optional, but the io address space defined herein is reserved and must only be be used with the behaviour described here.
+
+## Patent Notice
+
+Some technologies for which interfaces are exposed by this technical document are generally protected by patents owned by groups that have not granted a general license to Clever-ISA implementors. 
+Implementations of such technologies may require licenses from groups other than those allifiated with the Clever-ISA maintainers, under terms dictated by those groups.
 
 ## I/O Information
 
