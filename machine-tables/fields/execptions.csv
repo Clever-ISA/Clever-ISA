@@ -5,4 +5,5 @@ value,name,extension
 3,PF,X-main
 4,XA,X-main
 5,NMI,X-main
-6,FPE,X-float
+6,DIV,X-main
+7,FPE,X-float
