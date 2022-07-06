@@ -131,23 +131,34 @@ Exceptions:
 Instructions:
 - 0x401 (vmov): Moves a 16-byte value into the destination vector operand
 
-## Shuffle Vector 
+## Vector Permutations and Bit Selection 
 
-Opcodes: 0x402
+Opcodes: 0x402-0x403
 Operands: 2
-h: [00 ss], where `ss` is the element size.
+h: Opcode 0x402, [00 ss], where `ss` is the element size. Opcode 0x403, `[rrrr]`, where `rrrr` is the general purpose register for the destination operand.
 
-Operand Constraints: No operand may be a memory reference. The first operand must be a vector register, and the second operand must not be a vector register or immediate of size 16
+Operand Constraints: No operand may be a memory reference. The first operand must be a vector register, and the second operand must not be a vector register or immediate of size 16. For opcode 0x403, the second operand must be an immediate,
 
 Exceptions:
 - UND, if `cr0.VEC=0`
 - UND, if any operand constraint is violated
-- PROT, if the permutation given specifies an out-of-range element for the element size and vector size
+- PROT, for opcode 0x403, if the BASE or COUNT exceeds the size of the vector element.
+- PROT, for opcode 0x403, if the total number of elements, multiplied by COUNT, is more than 64-bits. 
+
 
 Instructions:
 - 0x402 (vshuffle): Shuffles the elements of the first operand according to the permutation given in the second operand.
+- 0x403 (vextract): Extract bits from vector elements into general purpose register according to a selection mask given in the second operand
 
-The permutation is made up of 2-8 4-bit location references. The nth 4-bit reference from the Least significant bit refers to the nth element from the least significant element of the destiniation vector. Additional references are ignored. The value in the reference is the element number (from the least significant) in the source vector.
+For `vshuffle`, The permutation is made up of 2-8 4-bit location references. 
+The nth 4-bit reference from the Least significant bit refers to the nth element from the least significant element of the destiniation vector. Additional references are ignored. The value in the reference is the element number (from the least significant) in the source vector. 
+Each location has high order bits masked off according to the total number of elements in the vector.
 
+For `vextract`, the selection mask is given as follows:
+
+| Bits | Name | Description |
+| 0-5  | BASE | The lowest order bit selected from each element by the instruction, from 0-63|
+| 7-9 | COUNT | The number of bits contiguously selected from each element, starting from BASE, minus 1|
+| 10-11 | ELEMSS | The size control, `log2(size)`, indicating the size of the elements |
 
 
