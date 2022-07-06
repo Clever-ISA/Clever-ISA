@@ -193,6 +193,46 @@ Signatures with `double` may be called with a signature using `long double` in e
 
 Each function in this section corresponds with the appropriate instruction X-float-extra applied to the appropriate size floating-point register.
 
+### Vector Intrinsics
+
+All intrinsics in this section require `X-vector`
+
+The toolchain should define the type `__v128` if it defines any intrinsic in this section.
+
+### Vector Manipulations
+
+`__vec128 __vec_load_int128(__int128 a);`
+
+Loads a 128-bit integer into a vector register. Only defined if the toolchain supports `__int128`
+
+`__vec128 __vec_load_int64(long long lo, long long hi);`
+
+Loads two 64-bit integers into a vector register. `lo` is moved into the low vector half, and `hi` into the high vector half.
+
+`void __vec_load_int64_lo(__vec128* out, long long lo);`  
+
+Loads the 64-bit value in `lo` into the low vector half of `out`. The high vector half of `out` is unmodified.
+
+`void __vec_load_int64_hi(__vec128* out, long long hi);
+
+Loads the 64-bit value in `hi` into the high vector half of `out`. The low vector half of `out` is unmodified.
+
+`__vec128 __vec_load_float128(__float128 a);`
+
+Loads a 128-bit integer into a vector register. Only defined if the toolchain supports `__float128`. 
+
+`__vec128 __vec_load_float64(double lo, double hi);`
+
+Loads two 64-bit integers into a vector register. `lo` is moved into the low vector half, and `hi` into the high vector half.
+
+`void __vec_load_float64_lo(__vec128* out, double lo);`  
+
+Loads the 64-bit value in `lo` into the low vector half of `out`. The high vector half of `out` is unmodified.
+
+`void __vec_load_float64_hi(__vec128* out, double hi);
+
+Loads the 64-bit value in `hi` into the high vector half of `out`. The low vector half of `out` is unmodified.
+
 ## Inline ASM
 
 Toolchains that support inline assembly should support Clever-ISA as follows in this section.
