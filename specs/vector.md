@@ -144,6 +144,7 @@ Exceptions:
 - UND, if any operand constraint is violated
 - PROT, for opcode 0x403, if the BASE or COUNT exceeds the size of the vector element.
 - PROT, for opcode 0x403, if the total number of elements, multiplied by COUNT, is more than 64-bits. 
+- PROT, for opcode 0x403, if any reserved bits are set.
 
 
 Instructions:
@@ -161,4 +162,5 @@ For `vextract`, the selection mask is given as follows:
 | 7-9 | COUNT | The number of bits contiguously selected from each element, starting from BASE, minus 1|
 | 10-11 | ELEMSS | The size control, `log2(size)`, indicating the size of the elements |
 
+All other bits are reserved.
 
