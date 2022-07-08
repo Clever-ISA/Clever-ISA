@@ -158,6 +158,7 @@ Each location has high order bits masked off according to the total number of el
 For `vextract`, the selection mask is given as follows:
 
 | Bits | Name | Description |
+|------|------|-------------|
 | 0-5  | BASE | The lowest order bit selected from each element by the instruction, from 0-63|
 | 7-9 | COUNT | The number of bits contiguously selected from each element, starting from BASE, minus 1|
 | 10-11 | ELEMSS | The size control, `log2(size)`, indicating the size of the elements |
