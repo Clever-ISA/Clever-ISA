@@ -102,7 +102,7 @@ All FP registers have undefined values during startup.
 Opcodes: 0x022-0x026
 Operands: 2
 
-h: For opcodes 0x022,0x24, and 0x26 `[00 0f]`where if `f` is set `flags` is not modified.  For opcodes 0x023 and 0x025, `[ss i f]` where `ss` corresponds to the number of fractional (`i` clear) or integer (`i` set) bits in the fixed point format.
+h: For opcodes 0x022,0x24, and 0x26 `[00 uf]`where if `f` is set `flags` is not modified, and if `u` is set then the instruction operates on unsigned integers rather than signed integer.  For opcodes 0x023 and 0x025, `[ss i f]` where `ss` corresponds to the number of fractional (`i` clear) or integer (`i` set) bits in the fixed point format.
 
 Operand Constraints: For opcode 0x022-0x023, the destination register shall be a floating-point register. For opcodes 0x024-0x025, the source register shall be a floating-point register. For opcodes 0x026, at least one operand shall be a floating-point register, and neither operand shall be a direct register other than a floating-point register.
 
@@ -135,9 +135,9 @@ Floating Point Exceptions:
 - SIGNAL: If the operand to opcode 0x024 or 0x025 is an sNaN
 
 Instructions:
-- 0x022 (movsif): Moves a signed integer value from the second operand into the first, converting it into a floating-point value.
+- 0x022 (movif): Moves a signed or unsigned (depending on `u`) integer value from the second operand into the first, converting it into a floating-point value.
 - 0x023 (movxf): Moves a fixed-point value from the second operand into the first, converting it into a fixed-point value.
-- 0x024 (movfsi): Moves a floating point value from the second operand into the first, truncating it into a signed integer value.
+- 0x024 (movfi): Moves a floating point value from the second operand into the first, truncating it into a signed or unsigned (depending on `u`) integer value.
 - 0x025 (movfx): Moves a floating point value from the second operand into the first, converting it into a fixed-point value
 - 0x026 (cvtf): Moves a floating-point value from the second operand into the first, converting it to the size of the destination operand.
 
@@ -150,13 +150,13 @@ For fixed point operands (`movxf` and `movfx`), the format is determined by divi
 
 All memory accesses are performed atomically. Note that the entire operation is not required to be atomic.
 
-Overflow caused by `movfsi` and `movfx` yields the maximum (for positive inputs) or minimum (for negative inputs) value of the type. Underflow yields 0. If any operand is a NaN, the result is the minimum value of the type.  
-If the input for `movxf`, `movsif`, `movfx`, or `cvtf` cannot be exactly represented, the value is rounded according to `fpcw.RND`, and `INEXACT` is raised.  
-If the input for `movfsi` cannot be exactly represented, the value is truncated (rounded towards zero).  INEXACT is not raised when integer truncation occurs.
-If the input to `movxf`, `movsif`, or `cvtf` is out of range of the destination format, then OVERFLOW is raised, and the result is +/- Infinity. 
+Overflow caused by `movfi` and `movfx` yields the maximum (for positive inputs) or minimum (for negative inputs) value of the type. Underflow yields 0. If any operand is a NaN, the result is the minimum value of the type.  
+If the input for `movxf`, `movif`, `movfx`, or `cvtf` cannot be exactly represented, the value is rounded according to `fpcw.RND`, and `INEXACT` is raised.  
+If the input for `movfi` cannot be exactly represented, the value is truncated (rounded towards zero).  INEXACT is not raised when integer truncation occurs.
+If the input to `movxf`, `movif`, or `cvtf` is out of range of the destination format, then OVERFLOW is raised, and the result is +/- Infinity. 
 If the input to `movxf` or `cvtf` is too small for the destination format, then UNDERFLOW is raised, and the result is +/-0. 
 
-If the input to `cvtf` is a NaN, then the result is an unspecified NaN of the same type. This occurs even when both operands are of the same format.
+If the input to `cvtf` is a NaN, then the result is an unspecified NaN of the same type. This occurs even when both operands are of the same format. 
 
 ### Floating-point Arithmetic
 
