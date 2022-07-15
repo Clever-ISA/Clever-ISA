@@ -29,9 +29,9 @@ opcode,mnemonic,hbits,opcount,extension
 01f,popar,0000,0,X-main
 020,movsx,000f,2,X-main
 021,bswap,000f,2,X-main
-022,movsif,000f,2,X-float
+022,movif,00uf,2,X-float
 023,movxf,ssif,2,X-float
-024,movfsi,000f,2,X-float
+024,movfi,00uf,2,X-float
 025,movfx,ssif,2,X-float
 026,cvtf,000f,2,X-float
 028,repbi,0000,prefix,X-main
