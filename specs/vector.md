@@ -55,7 +55,7 @@ Except where stated, vector register operands may only be used by instructions m
 
 The Long Immediate value structure is changed as follows: The structure shall be `[11 m yy r ss zzzz yyyy]`; `ss` may have the value `3` (corresponding to a size of 16).
 
-An `ss` value of 3 may only be used with the `vmov` instruction, may not be pcrelative, and may not be a memory reference. Memory references for a `vmov` instruction use `zzzz` as the extended size control value. Such operands shall have a size of at most `16` (zzzz=4).
+An `ss` value of 3 may only be used with the `vmov`, `cmpxchg`, and `wcmpxchg` instructions, may not be pcrelative, and may not be a memory reference. Memory references for a `vmov`, `xchg`, `cmpxchg`, and `wcmpxchg` instruction use `zzzz` as the extended size control value. Such operands shall have a size of at most `16` (zzzz=4).
 
 
 
