@@ -235,11 +235,11 @@ Operands: For opcode 0x118, 1. For Opcode 0x119, 2.
 
 
 Operand Contraints: No operand shall be have size 1. 
- For opcode 0x11e, the operand shall not be a register, other than a floating-point register. For opcode 0x124, at least one operand must be a floating-point register or a long immediate value and no operand shall be a register, other than a floating-point register. 
+ For opcode 0x118, the operand shall not be a register, other than a floating-point register. For opcode 0x119, at least one operand must be a floating-point register or a long immediate value and no operand shall be a register, other than a floating-point register. 
 
-h: 
+h: Shall be zero
 
-Flags: M, Z, C, and P are set according to the result. V is not modified.
+Flags: Z, C, and P are set according to the result. M and V are not modified.
 
 Floating-point Exceptions:
 - SIGNAL, if any operand is an sNaN
@@ -261,7 +261,10 @@ Instructions:
 - 0x118 (fcmpz): Performs partial-order floating-point comparison with the operand and +0.0
 - 0x119 (fcmp): Performs partial-order floating-point comparison with both operands
 
-For fcmpz, +0.0 is the first operand of the comparison.
+For fcmpz, +0.0 is the second operand of the comparison. Z, C, and P are set as follows:
+* If either operand is NaN, then `P` is set to 1, otherwise `P` is cleared.
+* Z is set to `1` if both operands are bitwise equivalent, or one operand is `+0.0` and the other is `-0.0`
+* C is set to `1` if the first operand is less than the second in the IEEE754 totalOrder ordering relation. 
 
 ### Trigger Previously Masked Floating-point Exceptions
 
