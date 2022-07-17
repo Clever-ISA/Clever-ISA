@@ -49,7 +49,7 @@ Vector Register Operands address pairs of vector registers, according to `rrrrrr
 
 `ssss` may be at most `4`, though future extensions may permit values greater than 4.
 
-Except where stated, vector register operands may only be used by instructions modified by the `vec` prefix, or instructions defined by this extension.
+Except where stated, vector register operands may only be used by instructions modified by the `vec` prefix, opcodes 0x200-0x202 (`xchg`, `cmpxchg`, and `wcmpxchg`), or instructions defined by this extension.
 
 ### Long Immediate Values
 
