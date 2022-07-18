@@ -114,6 +114,9 @@ opcode,mnemonic,hbits,opcount,extension
 401,vmov,0000,2,X-vector
 402,vshuffle,00ss,2,X-vector
 403,vextract,rrrr,2,X-vector
+404,vcmp,00ss,3,X-vector
+405,vtest,00ss,3,X-vector
+406,vfcmp,00ss,3,X-vector&X-float
 7c0,jmp,00ss,abs,X-main
 7c1,call,00ss,abs,X-main
 7c2,fcall,00ss,abs,X-main
