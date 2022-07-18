@@ -180,6 +180,7 @@ Exceptions:
 - UND, if any operand constraint is violated
 - For opcode 0x406, UND, if `cpuex2.FP=0`
 - For opcode 0x406, UND, if `cr0.FPEN=0`
+- For opcode 0x406, UND, if `ss` is `0`.
 
 Instructions:
 - 0x404 (vcmp): Compares each element of the third operand from the corresponding element of the second, as though by the `cmp` instruction, and sets each element of the first corresponding to the `flags` result of each comparison. 
