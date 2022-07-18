@@ -166,3 +166,25 @@ For `vextract`, the selection mask is given as follows:
 
 All other bits are reserved.
 
+## Vector Comparions
+
+Opcodes: 0x404-0x406  
+Operands: 3  
+h: `[00 ss]` where `ss` is the element size.
+
+Operand Constraints: All operands must be a vector register of the same size.
+
+
+Exceptions:
+- UND, if `cr0.VEC=0`
+- UND, if any operand constraint is violated
+- For opcode 0x406, UND, if `cpuex2.FP=0`
+- For opcode 0x406, UND, if `cr0.FPEN=0`
+
+Instructions:
+- 0x404 (vcmp): Compares each element of the third operand from the corresponding element of the second, as though by the `cmp` instruction, and sets each element of the first corresponding to the `flags` result of each comparison. 
+- 0x405 (vtest): Same as vcmp, but the comparison as as though by the `test` instruction.
+- 0x406 (vfcmp): Same as vcmp, but the comparison is as though by the `fcmp` instruction.
+
+Any bits in each element of the destination, other than the low-order 5 bits of each, are set to zero. Additionally, bits that do not correspond to flags modified by the underlying instruction for `vtest` (C or V) or `vfcmp` (M or V) are also set to zero in the destination.
+
