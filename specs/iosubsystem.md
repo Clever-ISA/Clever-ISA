@@ -22,6 +22,7 @@ The structure of the result is as follows:
 | 2   | ACPI | Advanced Control and Power Interface available | 
 | 3   | PCI  | Peripheral Component Interconnect Available |
 | 4   | GPIO | General Purpose I/O pins Available |
+| 5   | SCSI | Small Computer System Interface available |
 
 
 Other bits are reserved for future use and shall be set to `0`.
@@ -133,4 +134,9 @@ Setting any other value is the same as setting Uniniitlaized. Uninitialized can 
 
 Analog pins are configured by voltage with values from 0-255. 
 
+## PCI Memory Base Address
+
+The I/O Address 0x7f00000e is a read-write address that contains the base physical address for the PCIe configuration address space. The default value shall be at least 0x80000000 and it shall be set to a value that is aligned to 256 MiB. When modified, it shall be set to a value aligned to 256 MiB. 
+
+256 MiB of contiguous memory starting from the address last written to PCIe configuration base address is reserved for use by the PCIe configuration space.
 
