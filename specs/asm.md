@@ -96,7 +96,7 @@ Examples: `vec.8`, `vec.16`, etc.
 The condition codes for conditional branches, and the repcc instruction are as follows, including Aliases:
 
 | Canonical Condition Name | Canonical Mnemonic | Alternative Mnemonics |
-|==========================|====================|=======================|
+|--------------------------|--------------------|-----------------------|
 | Parity | p  | po (Parity Odd) |
 | Carry  | c  | b (Below) |
 | Overflow|v  | | 
