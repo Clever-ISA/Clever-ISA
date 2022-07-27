@@ -90,3 +90,26 @@ Example: `jeq.l` encodes a branch weight of `7`, and `jne.-6` encodes a branch w
 
 For the vec prefix, the element size value in bits should be used following the `.` suffix
 Examples: `vec.8`, `vec.16`, etc.
+
+## Condition Codes
+
+The condition codes for conditional branches, and the repcc instruction are as follows, including Aliases:
+
+| Canonical Condition Name | Canonical Mnemonic | Alternative Mnemonics |
+|==========================|====================|=======================|
+| Parity | p  | po (Parity Odd) |
+| Carry  | c  | b (Below) |
+| Overflow|v  | | 
+| Zero   | z  | eq (Equal) | 
+| Less Than| lt | | 
+| Less or Eq | le | |
+| Below or Eq | be | |
+| Minus | mi | n (Negative), sn (Sign Negative) |
+| Plus  | pl | nn (Non-negative), sp (Sign Positive) |
+| Above | a  | |
+| Greater | gt | |
+| Greater or Equal | ge | |
+| Not Zero | nz | ne (Not Equal) |
+| No Overflow | nv |  |
+| No Carry  | nc | ae (Above or Equal) |
+| No parity | np | pe (Parity Even) |
