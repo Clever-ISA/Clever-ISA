@@ -23,7 +23,7 @@ The structure of the result is as follows:
 | 3   | PCI  | Peripheral Component Interconnect Available |
 | 4   | GPIO | General Purpose I/O pins Available |
 | 5   | SCSI | Small Computer System Interface available |
-
+| 6   | VGA  | VGA Video Buffer Available |
 
 Other bits are reserved for future use and shall be set to `0`.
 
@@ -140,3 +140,8 @@ The I/O Address 0x7f00000e is a read-write address that contains the base physic
 
 256 MiB of contiguous memory starting from the address last written to PCIe configuration base address is reserved for use by the PCIe configuration space.
 
+## VGA Video Buffer
+
+The I/O Address 0x7f00000f is a read-write address that contains the base physical address for the VGA Video Buffer. The default value shall be at least 0x80000000 at shall be aligned to 256 KiB, and shall not overlap the default PCI Memory Base Address. If either value is set in a manner such that the memory regions overlap, which devices recieves reads/writes in the overlapping memory location is unspecified. 
+
+128 KiB of contiguous memory starting from the address last written to the VGA Video Buffer Base Address is reserved for use by the VGA Video Buffer.
