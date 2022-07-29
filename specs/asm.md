@@ -100,12 +100,12 @@ The condition codes for conditional branches, and the repcc instruction are as f
 | Parity | p  | po (Parity Odd) |
 | Carry  | c  | b (Below) |
 | Overflow|v  | | 
-| Zero   | z  | eq (Equal) | 
+| Zero   | z  | e, eq (Equal) | 
 | Less Than| lt | | 
 | Less or Eq | le | |
 | Below or Eq | be | |
-| Minus | mi | n (Negative), sn (Sign Negative) |
-| Plus  | pl | nn (Non-negative), sp (Sign Positive) |
+| Minus | mi | sn (Sign Negative) |
+| Plus  | pl | sp (Sign Positive) |
 | Above | a  | |
 | Greater | gt | |
 | Greater or Equal | ge | |
