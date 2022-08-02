@@ -71,6 +71,8 @@ opcode,mnemonic,hbits,opcount,extension
 04d,xor,rrrr,1,X-main
 04e,bnot,rrrr,0,X-main
 04f,neg,rrrr,0,X-main
+068,cmovt,cccc,3,X-main
+069,cmov,cccc,2,X-main
 06c,cmp,0000,2,X-main
 06d,test,0000,2,X-main
 06e,cmp,rrrr,1,X-main
