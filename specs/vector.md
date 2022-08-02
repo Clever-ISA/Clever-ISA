@@ -90,6 +90,7 @@ If the destiniation is a vector operand, other than v31, then the flags are set 
  - Opcodes 0x020-0x027
  - Opcodes 0x030-0x036
  - Opcodes 0x038-0x03e
+ - Opcodes 0x068-0x069
  - Opcodes 0x100-0x123
  - Opcodes 0x125-0x129
 

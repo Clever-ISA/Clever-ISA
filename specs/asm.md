@@ -71,16 +71,20 @@ e.g. for `mov cr0, 0x1000`, first the operand for `cr0` should be generated, the
 Base instruction mnemonics are the ones given in the instruction overviews.
 When more than one instruction is given the same mnemonic, then when encoding such an instruction, the instruction with the lowest numbered opcode eligible for the number of operands given, except that GPR Specializations should be considered before considering non-specialized instructions, and instructions with GPR destinations should be considered before instructions with GPR sources.
 
-The branch mnemonics, and `repcc` instruction should be indicated as with the prefix (`j` for branching, or `rep` for `repcc`), followed by the lowercase one or two character condition name.
-
 Examples:
 - `mov cr0, 0x1000` Should be encoded with opcode 0x008
 - `mov r0, 0x1000` should be encoded with opcode 0x00A
 - `mov cr0, r1` should be encoded with opcode 0x00B
 - `mov r0, r1` should be encoded with opcode 0x00A
 
+The branch mnemonics, the `repbi` prefix, and the `cmov` and `cmovt` mnemonics should be indicated as with the prefix (`j` for branching, `repb` for `repbi`,`cmovt` for `cmovt`, and `cmov` for `cmov`), followed by the lowercase one or two character condition name.
 
-For single bit h flags, such as `l`, `f`, or `w`, these should be indicated by the presense of the character after a `.` following the mnemonic.
+Examples:
+- `repbe` is a repbi prefix with a condition code of 4 (Zero).
+- `cmovtae` is a cmovt instruction with a condition code of 0xE (No Carry)
+
+
+For single bit h flags, such as `l`, `f`, or `w`, these should be indicated by the presence of the character after a `.` following the mnemonic.
 
 Example: `add.l` sets the `l` bit in `h`, while `add` does not.
 
