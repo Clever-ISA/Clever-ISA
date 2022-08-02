@@ -599,6 +599,34 @@ Instructions:
 - 0x04C (or*r*):  Specialization of opcode 0x004 (or) where the second operand is a gpr
 - 0x04D (xor*r*): Specialization of opcode 0x005 (xor) where the second operand is a gpr
 
+### Conditional Moves
+
+Opcodes: 0x068-0x069
+
+Operands: For opcode 0x068, 3. For Opcode 0x069, 2.
+
+h: `[cccc]` where c is a condition code
+
+Operand Contraints: The first operand shall be a register or a memory reference and at least one of the first two operands must be a register or immediate value. The third operand must be a register.
+
+Exceptions:
+- UND, if any operand constraint is violated.
+- UND, if any reserved register is operand.
+- UND, if the destination operand is the mode or ip register.
+- PROT, if any Supervisor register is an operand and mode.XM=0
+- PF, if a memory operand accesses an unavailable virtual memory address
+- PF, if a memory operand violates page protections
+- PF, if paging is disabled, and a memory operand accesses an out of range physical address
+
+
+Flags: none
+
+Instructions:
+- 0x068 (cmovt): Based on `flags` set in the third operand, stores the second operand in the first if the condition in `h` is satified.
+- 0x069 (cmov): Specialization of `cmovt` where the third operand is implicitly the `flags` register.
+
+For `cmovt` the expected layout of the third operand is the same as the `flags` register. Any bits other than the least significant 5 bits are ignored and should be set to zero
+
 ### Comparison Operations
 
 Opcode: 0x06c-0x06f
