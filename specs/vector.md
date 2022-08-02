@@ -80,8 +80,8 @@ Instructions:
  - Reads and decodes a full instruction following the prefix, and applies it to each of the vector elements in each specified vector register, and the exact value of each scalar operand.
 
 Flags: 
-If the destination is not a vector operand, flags are set according to the instruction and it's result.
-If the destiniation is a vector operand, other than v31, then the flags are set in the elements (corresponding to the element size control) of v31, and the overall Z and P flags are stored in `flags`.
+If the destination is not a vector operand, flags are set according to the instruction and the last result.
+If the destiniation is a vector operand, then the value of any flag that would be modified by the prefixed instruction are undefined.
 
 
  The following instructions may have a `vec` prefix:
