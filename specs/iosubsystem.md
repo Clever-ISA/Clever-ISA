@@ -145,3 +145,9 @@ The I/O Address 0x7f00000e is a read-write address that contains the base physic
 The I/O Address 0x7f00000f is a read-write address that contains the base physical address for the VGA Video Buffer. The default value shall be at least 0x80000000 at shall be aligned to 256 KiB, and shall not overlap the default PCI Memory Base Address. If either value is set in a manner such that the memory regions overlap, which devices recieves reads/writes in the overlapping memory location is unspecified. 
 
 128 KiB of contiguous memory starting from the address last written to the VGA Video Buffer Base Address is reserved for use by the VGA Video Buffer.
+
+## SCSI Command/Data Port
+
+The I/O Address 0x7f000014 is the command/data port for the SCSI bus. Commands can be written in multiple parts to this buffer, and responses may be read. 
+
+This port is variable size, larger read/write sizes act the same as multiple single-byte read/writes, in little-endian byte order
