@@ -24,6 +24,7 @@ The structure of the result is as follows:
 | 4   | GPIO | General Purpose I/O pins Available |
 | 5   | SCSI | Small Computer System Interface available |
 | 6   | VGA  | VGA Video Buffer Available |
+| 7   | SPI  | Serial Port Interface Available |
 
 Other bits are reserved for future use and shall be set to `0`.
 
@@ -151,3 +152,14 @@ The I/O Address 0x7f00000f is a read-write address that contains the base physic
 The I/O Address 0x7f000014 is the command/data port for the SCSI bus. Commands can be written in multiple parts to this buffer, and responses may be read. 
 
 This port is variable size, larger read/write sizes act the same as multiple single-byte read/writes, in little-endian byte order
+
+## Serial Peripheral Interface
+
+The I/O Address 0x7f000020 is the SPI Information Register.
+
+The lower 8 bits (bits 0-7) contain the number of Remote Devices attached to the system. Other bits are reserved and set to zero. The supervisor should not rely on the value of these bits.
+
+The I/O Address 0x7f000021 is the SPI Device Select Register. The lower 8 bits are set to number of the device to select. Upper bits are reserved and are ignored. The supervisor shall not set these bits. Reading the register will return the number of the device last selected in the lower 8 bits. Other bits are reserved and set to zero. The supervisor should not rely on the value of these bits. 
+If the register is read before it is first written to, the value read is undefined.
+
+The I/O Address 0x7f000022 is the SPI I/O register. Writing to this register will transmit the written value to the selected device. Reading from this register will read data from the selected device. If used before a value is written to 0x7f000021, the behaviour is undefined.
