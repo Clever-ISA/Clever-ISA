@@ -159,7 +159,7 @@ The I/O Address 0x7f000020 is the SPI Information Register.
 
 The lower 8 bits (bits 0-7) contain the number of Remote Devices attached to the system. Other bits are reserved and set to zero. The supervisor should not rely on the value of these bits.
 
-The I/O Address 0x7f000021 is the SPI Device Select Register. The lower 8 bits are set to number of the device to select. Upper bits are reserved and are ignored. The supervisor shall not set these bits. Reading the register will return the number of the device last selected in the lower 8 bits. Other bits are reserved and set to zero. The supervisor should not rely on the value of these bits. 
+The I/O Address 0x7f000021 is the SPI Device Select Register. The lower 8 bits are set to number of the device to select. Upper bits are reserved and are ignored. The supervisor shall not set these bits. Reading the register will return the number of the device last selected in the lower 8 bits. Other bits are reserved and set to zero. The supervisor should not rely on the value of these bits.
 If the register is read before it is first written to, the value read is undefined.
 
-The I/O Address 0x7f000022 is the SPI I/O register. Writing to this register will transmit the written value to the selected device. Reading from this register will read data from the selected device. If used before a value is written to 0x7f000021, the behaviour is undefined.
+The I/O Address 0x7f000022 is the SPI I/O register. Writing to this register will transmit the written value to the selected device. Reading from this register will read data from the selected device. If used before a value is written to 0x7f000021, the behaviour is undefined. If an unattached device is selected, the writes are discarded, and reads return zero bytes.
