@@ -52,20 +52,21 @@ If Opcodes 0x001-0x007 have an operand that's a floating-point register, UND is 
 | Bit   | Name     | Description                                              |
 |-------|----------|----------------------------------------------------------|
 | 0-2   | RND      | The current rounding mode for floating point operations. |
-| 4     | DENORM   | Denormal Values enabled when set, otherwise underflow to +/-0.0|
+| 4     | DENORM   | Denormal Values enabled when clear, otherwise underflow to +/-0.0|
 | 8-15  | EXCEPT   | The current floating point exceptions that are asserted. |
 | 16-23 | EMASK    | The exceptions that are masked (will not trigger a hardware exception)|
-| 24    | EMASKALL | If set, all exceptions are masked                        |
+| 24    | EMASKALL | If clear, all exceptions are masked                        |
 | 25-26 | XOPSS    | The upper-bound for extended precision                   |
 
 The value of fpcrw.RND is given as follows:
 | Mode | Description                    |
 |------|--------------------------------|
-| 0    | Towards ∞ (rounding up)        |
-| 1    | Towards -∞ (rounding down)     |
-| 2    | Towards 0  (truncation)        |
-| 3    | Half Up                        |
-| 4    | Half To Even                   |
+| 0    | Half To Even                   |
+| 1    | Towards ∞ (rounding up)        |
+| 2    | Towards -∞ (rounding down)     |
+| 3    | Towards 0  (truncation)        |
+
+
 
 The bits in fpcrw.EXCEPT and fpcw.EMASK are set corresponding to the following numbered floating-point exceptions (IE. if the 0th exception is raised, then bit 8 of fpcrw is set, and if the 5th exception is masked, then bit 19 of fpcrw is set):
 | Exception | Name      | Description                      |
@@ -85,11 +86,11 @@ The values in floating-point registers are stored bitwise. An instruction that d
 ### Startup
 
 During startup, the fpcw is set as follows:
-* RND is set to 4
-* DENORM is set
+* RND is set to 0
+* DENORM is clear
 * All exceptions are not asserted
-* All exception bits in EMASK are set
-* EMASKALL is set
+* No exception bits in EMASK are set
+* EMASKALL is clear
 * XOPSS is 0
 * All other bits are zero
 
