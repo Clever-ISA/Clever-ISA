@@ -519,6 +519,7 @@ Exceptions:
 - PF, if the first operand is a memory operand, and page protections are violated by the access
 - PF, if paging is disable, and a memory operand accesses an out of range physical address
 - PROT, if a memory operand is out of range for the PTL mode.
+- PROT, for opcodes 0x030-0x034 and 0x038-0x03c, if the shift value exceeds the width of the destination operand.
 
 Flags: Unless `f` is set in `h`, sets M, V, and Z according to the result of the operation. Sets C if the last bit shifted out was 1. 
 
@@ -527,16 +528,19 @@ Instructions:
 - 0x031 (rsh): Right Shifts the first operand by the second, shifting in 0 bits
 - 0x032 (arsh): Right Shifts the first operand by the second, preserving and copying the most significant bit
 - 0x033 (lshc): Left Shifts the first operand by the second, shifting in the value of the carry flag
-- 0x034 (rshc): Right Shifts the first operand by the second, shifting in teh value of the carry flag.
-- 0x035 (lrot): Left Rotates the first operand by the second, shifting the bits that were shifted out into the low order bits
-- 0x036 (rrot): Right Rotates the first operand by the second, shifting the bits that were shifted out into the high order bits
+- 0x034 (rshc): Right Shifts the first operand by the second, shifting in the value of the carry flag.
+- 0x035 (lrot): Left Rotates the first operand by the second, shifting the bits that were shifted out into the low order bits. The second operand is taken modulo the width of the destination, in bits.
+- 0x036 (rrot): Right Rotates the first operand by the second, shifting the bits that were shifted out into the high order bits. The second operand is taken modulo the width of the destination, in bits.
 - 0x038 (lsh*r*): Specialization of lsh that operates on a gpr.
 - 0x039 (rsh*r*): Specialization of rsh that operates on a gpr.
 - 0x03a (arsh*r*): Specialization of arsh that operates on a gpr
 - 0x03b (lshc*r*): Specialization of lshc that operates on a gpr
 - 0x03c (rshc*r*): Specialization of rshc that operates on a gpr
-- 0x03d (lrot*r*): Specialization of lrot that operates on a gpr
-- 0x03e (rrot*r*): Specialization of rrot that operates on a gpr.
+- 0x03d (lrot*r*): Specialization of lrot that operates on a gpr. The second operand is taken modulo 64.
+- 0x03e (rrot*r*): Specialization of rrot that operates on a gpr. The second operand is taken modulo 64.
+
+Opcodes 0x038-0x03e uses 64-bits for the width of the instruction. 
+For determining intermediate calculation width, the width of the second operand is ignored.
 
 ### Unary Operations
 
