@@ -192,6 +192,8 @@ The following relocations are available to `ET_REL` ELF files for the Clever Arc
 | R_CLEVER_RELAX_LONG_PCREL | 11  | Emits a relaxation hint for a pc-relative longimm opernad, allowing it to be reduced in size according to the value of the relocation. |
 | R_CLEVER_RELAX_SHORT | 12 | Emits a relaxation hint for a longimm operand, allowing it to be converted to a shortimm operand if the value is in range |
 | R_CLEVER_RELAX_SHORT_PCREL | 13 | Emits a relaxation hint for a pc-relative longimm operand, allowing it to be converted to a shortimm operand if the value is in range |
+| R_CLEVER_RELAX_RES_4 | 14 | Reserved Relaxation number. Must be treated as a No-op and must not be generated |
+| R_CLEVER_RELAX_RES_5 | 15 | Reserved Relaxation number. Must be treated as a no-op and must not be generated |
 | R_CLEVER_GOT | 16 | Relocates against a symbol's GOT Entry Address |
 | R_CLEVER_GOT_PCREL | 17 | Relocates against a symbol's GOT Entry pcrelative address |
 | R_CLEVER_PLT | 18 | Relocates against a symbol's PLT Entry address |
@@ -202,6 +204,8 @@ The following relocations are available to `ET_REL` ELF files for the Clever Arc
 | R_CLEVER_RELAX_PLT_PCREL | 23 | Same as R_CLEVER_RELAX_LONG_PCREL, but against the symbol's PLT Entry Address |
 | R_CLEVER_DYNENT | 24 | Relocates against the 8 byte index into the dynamic symbol table for the symbol |
 
+
+Relocation numbers from 10 to 15, and from 20 to 23 are relaxations, and are optional to implement. An link editor that is given these relocations is permitted to take no action wrt. any of these relaxations, but they must still be accepted without error (in such a case, they must be ignored).
 
 ## Position Independent Code And Shared Objects
 
@@ -219,7 +223,7 @@ The following relocations may not appear in a Shared Object file or Position Ind
 - R_CLEVER_RELAX_GOT
 - R_CLEVER_RELAX_PLT
 
-Additionally, the following relocations against symbols defined in a linked shared object may not be used:
+Additionally, the following relocations against symbols defined in a linked shared object, or - in a dynamically linked executable or shared object - against a global symbol with default visibility, may not be used:
 - R_CLEVER_16_PCREL
 - R_CLEVER_32_PCREL
 - R_CLEVER_64_PCREL
@@ -227,6 +231,8 @@ Additionally, the following relocations against symbols defined in a linked shar
 - R_CLEVER_RELAX_LONG_PCREL
 - R_CLEVER_RELAX_SHORT_PCREL
 
+
+Errors issued for any relaxation is optional, but such errors must be issued by the link editor if the link editor performs any action other than a no-op for such relaxations.
 
 ### Dynamic Linker
 
