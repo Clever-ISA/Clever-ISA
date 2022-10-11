@@ -87,11 +87,16 @@ The vector types `__v128`, `__v128i`, and `__v128f` shall be 16-bytes in size an
 
 The vector types `__v256`, `__v256i`, and `__v256f` shall be 32-bytes in size and 16-byte aligned.
 
+### Pointers
+
+Pointers are 8-bytes long under this abi, or 4-bytes under the optional ILP32 ABI. 
+In the case of 8-byte sized pointers, applications complying with this abi must not assume the page table level set by the operating system.
+
 ## Calling Convention
 
 ### Registers
 
-The following registers shall be callee saved: `r6`, `r7`, `r12`, `r13`, `r14`, `r15`, `fpcrw`, `f6`, `f7`, `v32l` through `v63h`. 
+The following registers shall be callee saved: `r6`, `r7`, `r12`, `r13`, `r14`, `r15`, `fpcrw`, `f6`, `f7`. 
 
 
 All other registers are caller saved.
