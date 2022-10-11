@@ -92,7 +92,7 @@ For branch weight hints, the keywords `likely` or `l`, and `unlikely` or `u` can
 
 Example: `jeq.l` encodes a branch weight of `7`, and `jne.-6` encodes a branch weight of -6
 
-For the vec prefix, the element size value in bits should be used following the `.` suffix
+For the vec prefix, the element size value in bits should be used following the `.` suffix. A size name may be used instead of a numeric value (`short` is not accepted)
 Examples: `vec.8`, `vec.16`, etc.
 
 ## Condition Codes
