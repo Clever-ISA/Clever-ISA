@@ -28,6 +28,7 @@ Changes that affect supervisors and applications compiled against previous versi
 - Subsequent extensions cannot change the behaviour of accessing registers 63 and 255. 
 - Subsequent extensions cannot change the behaviour of instructions 0x000 and 0xfff.
 - Subsequent extensions cannot change the definition of io addresses prescribed by this specification.
+- The change of the result of any instruction from an undefined value to a particular value
 
 Additionally, the following behaviours are considered reserved to the implementation, and may not be changed by extensions:
 - The behaviour and existance of instructions 0xfe0-0xfff, and instructions subsequently defined as "Machine Specific"
