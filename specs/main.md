@@ -519,9 +519,8 @@ Exceptions:
 - PF, if the first operand is a memory operand, and page protections are violated by the access
 - PF, if paging is disable, and a memory operand accesses an out of range physical address
 - PROT, if a memory operand is out of range for the PTL mode.
-- PROT, for opcodes 0x030-0x034 and 0x038-0x03c, if the shift value exceeds the width of the destination operand.
 
-Flags: Unless `f` is set in `h`, sets M, V, and Z according to the result of the operation. Sets C if the last bit shifted out was 1. 
+Flags: Unless `f` is set in `h`, sets M, and Z according to the result of the operation. Sets C if the last bit shifted out was 1. Sets V if the shift quantity exceeds the width of the first operand. 
 
 Instructions:
 - 0x030 (lsh): Left Shifts the first operand by the second, shifting in 0 bits
@@ -541,6 +540,8 @@ Instructions:
 
 Opcodes 0x038-0x03e uses 64-bits for the width of the instruction. 
 For determining intermediate calculation width, the width of the second operand is ignored.
+
+For opcodes 0x030-0x034 and 0x0380-0x03C, if the shift width exceeds the width of the first operand, the result is an undefined value.
 
 ### Unary Operations
 
