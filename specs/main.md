@@ -541,7 +541,7 @@ Instructions:
 Opcodes 0x038-0x03e uses 64-bits for the width of the instruction. 
 For determining intermediate calculation width, the width of the second operand is ignored.
 
-For opcodes 0x030-0x034 and 0x0380-0x03C, if the shift width exceeds the width of the first operand, the result is an undefined value.
+For opcodes 0x030-0x034 and 0x0380-0x03C, if the shift width exceeds the width of the first operand, the result is an undefined value, and the C flag is left in an undefined state.
 
 ### Unary Operations
 
