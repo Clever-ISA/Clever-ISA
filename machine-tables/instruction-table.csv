@@ -77,6 +77,7 @@ opcode,mnemonic,hbits,opcount,extension
 06d,test,0000,2,X-main
 06e,cmp,rrrr,1,X-main
 06f,test,rrrr,1,X-main
+070,pload,0000,3,X-hash-accel
 100,round,000f,1,X-float
 101,ceil,000f,1,X-float
 102,floor,000f,1,X-float
@@ -112,6 +113,11 @@ opcode,mnemonic,hbits,opcount,extension
 202,wcmpxchg,0000,3,X-main
 203,fence,0000,0,X-main
 230,rpoll,rrrr,0,X-rand
+238,sipround,0000,2,X-hash-accel
+23A,fusedmul,0ooo,3,X-hash-accel
+23B,fusedimul,0ooo,3,X-hash-accel
+23C,crcaccum,000t,3,X-hash-accel
+23D,crc32accum,0001,2,X-hash-accel
 400,vec,00ss,prefix,X-vector
 401,vmov,0000,2,X-vector
 402,vshuffle,00ss,2,X-vector
