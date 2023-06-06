@@ -974,11 +974,13 @@ struct itab_entry{
     int64_t ip;
     int64_t sp;
     struct{
+        _Bool PXM:1;
         _Bool PX:1;
-        unsigned __reserved0: 31;
-        unsigned __reserved;
+        uint32_t __reserved0: 29;
+        _Bool PRESENT:1;
+        uint32_t __reserved;
     } flags;
-    uint64_t reserved;
+    uint64_t mode;
 };
 struct itab{
     uint64_t extent;
@@ -987,14 +989,14 @@ struct itab{
 };
 ```
 
-The value of itabp shall be the physical address of an itab structure. Each index in itab is associated with a particular interrupt or exception number. `itabp` must be aligned to 32 bytes or the CPU resets when an exception occurs.
+The value of itabp shall be the virtual address of an itab structure, and must be page aligned. Each index in itab is associated with a particular interrupt or exception number. `extent` must be a multiple of 32 and each of the `reserved` fields muts be `0`. 
 
 There may be up to 64 entries in the itab. The first 16 entries are used for processor exceptions. 
 The next 16 entries are software interrupts. 
 The remaining 32 entries are available for assigning to Interrupt Requests.
 
-If an exception raised exceeds the bounds of itab, ABRT is raised. If ABRT exceeds those bounds, the processor resets.
-If a software interrupt or IRQ raised exceeds the bounds of itab, PROT is raised. 
+The `PX` and `PXM` bits must be set to the same value.
+
 
 ### Exceptions
 
@@ -1030,6 +1032,32 @@ When a Page Fault Occurs, additional information may be stored to address in the
 
 *All existing sources of PROT set the value to `0`, but future extensions may cause PROT exceptions that. Supervisor code may assume that if it enables no extensions for user code and does not use instructions from any extensions, that it will recieve a value of `0` in PROT handlers, but should not assume such about any particular extension it might enable.
 
+### Software Interrupts
+
+Software Interrupts are raised by the unprivilaged `int` instruction. Up to 16 unprivilaged interrupts may be defined, and they occupy entries 16-31 of the interrupt table. 
+
+Software Interrupts use the `PX` flag. If `PX` is `0`, then the interrupt entry cannot be raised by software running in program mode. If PX is `1`, then the interupt entry can be raised by software running in any mode.
+
+### Interupt Handling Procedure
+
+The following process occurs when an interupt is raised (via an exception, hardware interrupt, or the `int` instruction):
+1. The interrupt table entry number is computed - for exceptions, this is the exception number. For software interrupts, this is 16+the interrupt number. For hardware interrupts, this is 32+the hardware interrupt number. 
+2. The offset in the table is computed: This is 32 bytes times the interupt number computed above, plus 32.
+3. The extent of the table is read from the interrupt table register (as a virtual addres). The access is performed as though the processor was in supervisor mode (`mode.XM=0`) and the access is not an instruction fetch. If the access results in a page fault, an interrupt handling error occurs (PF) [Note: This is likely to result in a processor reset]. The value of the extent may be cached by the processor since the last interrupt was raised, provided no intervening writes to the `itabp` register have ocured, and using the cached value would not cause step 4 to fail. If the extent value is not a multiple of 32, or any of the `reserved` values are set to a non-zero value, an interrupt handling error occurs (PROT). These checks are not required to occur if a cached value is used for `extent`. Whether or not the processor caches `extent` values, and whether or not it performs these checks when a cached vaue is used, is unspecified.
+4. The offset is checked against the extent of the table. If the offset is greater than the extent, an interrupt handling error occurs (PROT). If a cached value was used, instead steps (3) and (4) are redone, with the extent of the table read from memory.
+5. The entry pointer is obtained. This pointer is computed by offsetting the value of `itabp` by the offset. 
+6. The flags field for the entry is validated. First, if `flags.PRESENT` is 0, then an interrupt handling error occurs. Then, if `flags.PX` and `flags.PXM` are not the same value for a software interrupt, an interrupt handling error occurs. Then, for a software interrupt, if `mode.XM` is `1`, and `flags.PX` is `0`, then an interrupt handling error occurs. Finally, if any of the fields named `reserved` are set to a value other than `0`, an interrupt handling error occurs (PROT). 
+7. The value of the `ip`, `mode`, `flags`, and `r7` registers are stored by the processor in an unspecified manner that is not accessible via any memory or register, other than optionally by a machine-specific register.
+8. The values of the entry's `ip` and `mode` fields are validated. If the `ip` field has the low bit set, then an interrupt handling error occurs (XA). If the `mode` field has `XM` and `XMM` set to different values, or has set any reserved bit, then an interrupt handling error occurs (PROT).
+9. The value of the `ip` and `r7` registers are loaded from the `ip` and `sp` fields of the entry.
+10. The stored values of the `flags`, `r7`, `mode`, and `ip` register (in that order) are pushed to the stack as though by the `push`, except that all memory accesses occur as though `mode.XM` is `0`. If any memory access causes a page fault, an interrupt handling error occurs (PF). The stored state is then discarded.
+11. The value of the `mode` register is loaded from the `mode` field of the entry. The instruction stream is synchronized with memory. The processor then resumes normal execution starting from `ip`.
+
+If any step causes an interrupt handling error, the following steps are taken:
+1. If the interrupt is caused by handling the ABRT exception, then the processor performs the operations specified in [Init Procedure](#init-procedure) (Note: IE. the processor resets).
+2. If the interrupt is caused by handling any exception, then the current exception and the stored state is discarded by the CPU, and the ABRT exception is raised. The value of the `ip` and `r7` registers saved by the Interrupt Handling Procedure is undefined. 
+3. The value of the `ip` and `r7` registers are set to the value stored by the processor, if they've been modified by the above procedure. The Stored state is then discarded.
+4. The exception specified by the error is raised. 
 
 ## Init Procedure
 
