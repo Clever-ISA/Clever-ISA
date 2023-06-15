@@ -132,7 +132,6 @@ Processor Control (cr0) bitfield
 | --- | ------------------------ |:----------------------------------------------------------------:|
 | 0   | Paging (PG)              | Memory Accesses are performed in virtual memory described by cr1 |
 | 1   | Interrupt Enable (IE)    |             Enable External and software interrupts              |
-| 3-5 | Page Table Nesting (PTL) |        The size of virtual memory accesses when cr0.PG=1.        |
  
 
 All unmentioned flags are reserved. Attempting to set any such flag causes an exception
@@ -146,7 +145,7 @@ CPU Extension Availability flags (cpuex2)
 | 2-4 | Physical Address Size (PAS) | The size of system physical addresses. |
 | 5-7 | Virtual Address Size (VAS)  |     The size of system addresses.      |
 
-Virtual Address Size, as determined by cpuex2.VAS and cr0.PTL is assigned as follows: 0=32-bit, 1=40-bit, 2=48-bit, 3=56-bit, 4=64-bit.
+Virtual Address Size, as determined by cpuex2.VAS and cr3.PTL is assigned as follows: 0=32-bit, 1=40-bit, 2=48-bit, 3=56-bit, 4=64-bit.
 
 Physical Address Size, as determined by cpuex2.PAS is assigned as follows:  0=32-bit, 1=36-bit, 2=40-bit, 3=44-bit, 4=48-bit, 5=52-bit, 6=56-bit, 7=60-bit.
 
@@ -1050,7 +1049,7 @@ The memory at physical addreses 0x0000 through 0xffff shall be loaded in a machi
 
 All address spaces in the processor have a size, dictated by either cpuex2.PAS (for physical addresses), or cr0.PTL (for virtual addresses). 
 
-The value of cr0.PTL dictates the size of the address space when cr0.PG=1. When paging is enabled, virtual addresses are signed integer values which are extended to 32-bits. In particular, the values of cr0.PTL specify the following ranges for virtual address
+The value of page.PTL dictates the size of the address space when cr0.PG=1. When paging is enabled, virtual addresses are signed integer values which are extended to 64-bits. In particular, the values of page.PTL specify the following ranges for virtual address
 * 0: 32-bit virtual addresses, Range: [-0x80000000,0x80000000)
 * 1: 36-bit virtual addresses, Range: [-0x800000000,0x800000000)
 * 2: 48-bit virtual addresses, [-0x800000000000,0x800000000000)
@@ -1062,7 +1061,7 @@ Accessing an out of range virtual address while cr0.PG=1 causes a PF exception.
 The maximum value of cr0.PTL is specified in excpu2.VAS. A UND exception occurs if a value outside this range is stored.
 
 Physical address size, including memory operands when cr0.PG=0, the value of itab, or any element of a page table, is dictated by excpu2.PAS, which is the multiple of 4-bits exceeding 32-bit (up to 64-bit). Physical addresses are unsigned integers. A physical address is out-of-range if any bit exceeding `(4*excpu2.PAS)+32` is set. 
-Accessing an out of range physical address while cr0.PG=0 causes a PF exception.
+Accessing an out of range physical address while cr0.PG=0 or during page translation causes a PF exception.
 
 There need not be a correspondence between excpu2.PAS and excpu2.VAS. The physical address space may be smaller or larger than the permitted virtual address space. 
 
@@ -1073,7 +1072,7 @@ There need not be a correspondence between excpu2.PAS and excpu2.VAS. The physic
 Clever Name ISA uses a recursive page table format, as an array of 64-bit physical address, 4096-byte aligned (with the lower 12 bits used for flags). The first level table contains physical addresses for pages accessed accessed by corresponding virtual address, the second level table contains physical address of each first level table, etc. 
 The physical address of the highest level table is present in the `page` register when `cr0.PG=1`. This address is likewise 4096-byte aligned and uses the lower 12 bits of the flags.
 
-The number of levels (and width of the highest level level) is determined by the Page Table Nesting Level, cr0.PTL. Every level other than the first has length 512:
+The number of levels (and width of the highest level level) is determined by the Page Translation Level, page.PTL. Every level other than the first has length 512:
 * The first level table can address 2^21, or 2097152 bytes.
 * The second level table can address 2^30, or 1073741824 bytes.
 * The third level table can address 2^39, or 549755813888 bytes. When cr0.PTL=0, it has size 8, which can address 2^32, or 4294967296 bytes. When cr0.PTL=1, it has size 64, which can address 2^36, or 68719476736 bytes.
@@ -1124,7 +1123,9 @@ Note: Permission computations for pages do not depend on the PERM field of follo
 
 Other values are reserved. Attempting to access a page that violates this constraint triggers PF.
 
-All flag bits in the `page` register are reserved and must be zero. Attempting to enable paging while any bit is set triggers PF. Note that paging will not be enabled if this requirement is violated (cr0.PG=0 will remain true). 
+All flag bits in the `page` register are reserved and must be zero, except for the bottom 3 bits, which stores page.PTL, up to the virtual address size.
+Attempting to enable paging in violation of this section triggers PF. 
+Note that paging will not be enabled if this requirement is violated (cr0.PG=0 will remain true). 
 
 Note: If the value of `page` is changed, such that any reserved bit is set, the above check is not performed, and PF will be triggered on the first memory access, which is likely the first following instruction fetch. 
 As handling PF will cause a page fault, ABRT will be triggered, which likewise cannot be handled, and the processor will reset. 
