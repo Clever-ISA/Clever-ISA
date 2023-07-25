@@ -74,7 +74,7 @@ Exceptions:
 - UND if cpuex2.HACCEL is `0`
 - UND if cr0.HACCEL is `0`
 - UND if any operand constraint is violated
-- UND if `ooo` is 0, 6, or 7.
+- UND if `ooo` is 6, or 7.
 - PF, if a memory operand accesses an unavailable virtual memory address
 - PF, if the first operand is a memory operand, and page protections are violated by the access
 - PF, if paging is disabled, and a memory operand accesses an out of range physical address
@@ -83,6 +83,15 @@ Exceptions:
 Instructons:
 - 0x23A (`fusedmul`): Multiples the first operand by the second, then combines the result with the third operand using the arithmetic or logic operation encoded in `ooo`
 - 0x23B (`fusedimul`): Same as 0x23A, except peforms signed multiplication instead of unsigned.
+
+The operations that can be encoded into `fusedmul` are `nop`, `add`, `sub`, `and`, `or`, or `xor`, corresponding to the opcode value of operation.
+
+`o`=0 correponds to `nop` rather than `und`. The result of the computation is `a=a*b`, where `a` is the first operand and `b` is the second. 
+This can be used to peform multiplication with explicit operands, rather than `r0` and `r3` implicitly used by the `mul` and `imul` instructions. The third operand is ignored in this case.
+
+`o`=6 and `o`=7 (corresponding to `mul` and `div` respectively) are reserved.
+
+The result size is given by the size of the destination operand, and upper bits are discarded. This instruction cannot be used to perform a widening multiplication.
 
 
 ### CRC
