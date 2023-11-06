@@ -65,6 +65,9 @@ The value of fpcrw.RND is given as follows:
 | 1    | Towards ∞ (rounding up)        |
 | 2    | Towards -∞ (rounding down)     |
 | 3    | Towards 0  (truncation)        |
+| 7    | Reserved                       |
+
+Other values of `fpcrw.RND` are reserved and setting them causes floating-point instructions to issue `UND`. Many floating-point instructions may specify a rounding mode in their `h` field (typically in inverted form) and that rounding mode is explicit. The value `7` is reserved to indicate that the value in `fpcrw.RND` is used. 
 
 
 
@@ -103,7 +106,7 @@ All FP registers have undefined values during startup.
 Opcodes: 0x022-0x026
 Operands: 2
 
-h: For opcodes 0x022,0x24, and 0x26 `[00 uf]`where if `f` is set `flags` is not modified, and if `u` is set then the instruction operates on unsigned integers rather than signed integer.  For opcodes 0x023 and 0x025, `[ss i f]` where `ss` corresponds to the number of fractional (`i` clear) or integer (`i` set) bits in the fixed point format.
+h: For opcodes 0x022 and 0x24 `[00 uf]`where if `f` is set `flags` is not modified, and if `u` is set then the instruction operates on unsigned integers rather than signed integer.  For opcodes 0x023 and 0x025, `[ss i f]` where `ss` corresponds to the number of fractional (`i` clear) or integer (`i` set) bits in the fixed point format. For opcode 0x026 `[r̄r̄ r̄f]` where if `f` is set `flags` is not modified, and `r̄` is set to the inverse of the rounding mode to use for the operation (as per `fpcrw.RND`). If `r` is set to `7` (and thus `r̄` is set to `0`), the rounding mode in `fpcrw.RND` is used instead.
 
 Operand Constraints: For opcode 0x022-0x023, the destination register shall be a floating-point register. For opcodes 0x024-0x025, the source register shall be a floating-point register. For opcodes 0x026, at least one operand shall be a floating-point register, and neither operand shall be a direct register other than a floating-point register.
 
@@ -117,6 +120,7 @@ Exceptions:
 - UND, if a reserved register is an operand.
 - UND, if a floating-point operand has size 1
 - UND, if fpcrw.EOPSS=3
+- UND Except `0x022` and `0x024`, if an invalid rounding mode is set in `r` or `fpcrw.RND`.
 - PF, if the target address is an unavailable virtual memory address
 - PF, if page protections are violated by the access
 - PF, if paging is disable, and the target address is an out of range physical address
@@ -164,7 +168,7 @@ If the input to `cvtf` is a NaN, then the result is an unspecified NaN of the sa
 Opcodes: 0x100-0x10f,
 Operands: Opcodes 0x100-0x105, 1; Opcodes 0x106-0x10a, 2; Opcode 0x10b, 3.
 
-h: All other opcodes, `[00 0f]` where if `f` is set, `flags` is not modified.
+h: All other opcodes, `[r̄r̄ r̄f]` where if `f` is set, `flags` is not modified. `r̄` is set to the inverted rounding mode as per `fpcrw.RND` (bits 0-2). If `r` is set to 7 (and thus `r̄` is `0`) the rounding mode in `fpcrw.RND` is used instead.
 
 Operand Constraints: The first operand shall be a floating-point register, or a memory reference. 
 At least one operand shall be a floating-point register. No operand shall be a direct register, other than a floating-point register.
@@ -175,6 +179,7 @@ Exceptions:
 - If `d` is set in h, UND, if cpuex2.DFP=0.
 - UND, if a floating-point operand has size 1
 - UND, if fpcrw.EOPSS=3
+- UND, if an invalid rounding mode is set in `r` or `fpcrw.RND`.
 - PF, if the target address is an unavailable virtual memory address
 - PF, if page protections are violated by the access
 - PF, if paging is disable, and the target address is an out of range physical address
@@ -207,11 +212,10 @@ Instructions:
 - 0x108 (fmul): Multiplies the first operand by the second.
 - 0x109 (fdiv): Divides the first operand by the second
 - 0x10a (frem): Computes the remainder of the first operand, divided by the second, and stores the result in the first.
-- 0x10b (fma): Multiplies the first operand by the second, and adds the third as though with infinite intermediate precision, storing the result in the first.
+- 0x10b (ffma): Multiplies the first operand by the second, and adds the third as though with infinite intermediate precision, storing the result in the first.
 
 If any operand is a NaN, the result is a qNaN. This does not cause INVALID exceptions to occur.
 
-All floating-point operations described within this section shall be performed to within 0.5 ULPs of the exact value, as determined by the result format.
 
 Handling of the Z flag for floating-point operations is on the logical value of the operation, rather than the bitwise value (like for integer operations). Both + and - 0.0 in results set the Z flag. -0.0 in results also sets the `N` flag.
 
@@ -222,11 +226,9 @@ In computing the result, the size of the operand shall specify the minimum range
 The result is then converted to the destiniation format and stored in the destination operand. 
 If the result is larger than the maximum value of destination format, then OVERFLOW is triggered. If the result is smaller than the minimum value of the destination format, then UNDERFLOW is triggered. If the result cannot be exactly represented in the destination format, then INEXACT is triggered.
 
-If the result is smaller than the minimum normal value of the format, then the result is a denormal value of fpcrw.DENORM is set. Otherwise, UNDERFLOW is triggered and the result is +/-0.0.
+If the result is smaller than the minimum normal value of the format, then the result is a denormal value if fpcrw.DENORM is clear. Otherwise, UNDERFLOW is triggered and the result is +/-0.0.
 
-If an operation produces a NaN result, it is unspecified what NaN is produced, except that any operation on a qNaN or sNaN shall produce an qNaN. 
-
-The meaning of NaN representations is unspecified, except that the "canonical" values with only the most significant bit in the mantissa set with either sign, shall be quiet.
+If an operation produces a NaN result, it is unspecified what NaN is produced, except that a sNaN shall not be produced by any operation.
 
 ### Floating-point comparions
 
@@ -240,7 +242,7 @@ Operand Contraints: No operand shall be have size 1.
 
 h: Shall be zero
 
-Flags: Z, C, and P are set according to the result. M and V are not modified.
+Flags: Z, C, V, M, and P are set according to the result. 
 
 Floating-point Exceptions:
 - SIGNAL, if any operand is an sNaN
@@ -262,10 +264,45 @@ Instructions:
 - 0x118 (fcmpz): Performs partial-order floating-point comparison with the operand and +0.0
 - 0x119 (fcmp): Performs partial-order floating-point comparison with both operands
 
-For fcmpz, +0.0 is the second operand of the comparison. Z, C, and P are set as follows:
+For fcmpz, +0.0 is the second operand of the comparison. 
+Z, C, V, and P are set as follows:
 * If either operand is NaN, then `P` is set to 1, otherwise `P` is cleared.
 * Z is set to `1` if both operands are bitwise equivalent, or one operand is `+0.0` and the other is `-0.0`
 * C is set to `1` if the first operand is less than the second in the IEEE754 totalOrder ordering relation. 
+* V is set to `1` if the first operand is numerically less than the second. This can be used to short-circuit the `x < y` comparison without checking `P`
+- M is set if the second operand is negative and the first is not (sign bit is set, including NaNs)
+
+For clarification, the following table indicates the value of each status flag with example operands:
+| Left Operand | Right Operand | Z | C | V | P | M |
+|--------------|---------------|---|---|---|---|---|
+| +0.0         | -0.0          | 1 | 0 | 0 | 0 | 1 |
+| -0.0         | +0.0          | 1 | 1 | 0 | 0 | 0 |
+| -1.0         | +0.0          | 0 | 1 | 1 | 0 | 0 |
+| -Inf         | Inf           | 0 | 1 | 1 | 0 | 0 |
+| Inf          | -1.0          | 0 | 0 | 0 | 0 | 1 |
+| 0x7ff80001   | -1.0          | 0 | 0 | 0 | 1 | 1 |
+| 0x7ff80001   | 0x7ff80001    | 1 | 0 | 0 | 1 | 0 |
+
+
+After using `fcmp` or `fcmpz`, the following comparisons can be achieved using the following condition codes (Some requires 2 condition checks. With the exception of `!=` and `bitne`, which is OR, these are all AND)
+
+| Operation | cc1 | cc2 |
+|-----------|-----|-----|
+| `<`       | `v` | -   |
+| `>`       | `a` | `np`|
+| `>=`      | `nc`| `np`|
+| `<=`      | `be`| `np`|
+| `==`      | `z` | `np`|
+| `!=`      | `p` | `nz`|
+| `total<`  | `c` | -   |
+| `total>`  | `a` | -   |
+| `total<=` | `be`| `nm`|
+| `total>=` | `ae`| -   |
+| `biteq`   | `ae`|`be` |
+| `bitne`   | `a` | `b` |
+
+Note: `biteq` and `bitne` can be computed more efficiently using the integer `cmp` instruction, opcode 0x060.
+
 
 ### Trigger Previously Masked Floating-point Exceptions
 
