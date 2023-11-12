@@ -680,7 +680,7 @@ Instructions:
 - 0x202 (wcmpxchg): Same as 0x201, but the comparison is permitted to spuriously fail
 - 0x203 (fence): Synchronizes memory accesses across cpus. Immediately before the instruction is executed, all memory operations performed on the current cpu by prior instructions shall be completed, and no new memory accesses performed on the current cpu by subsequent instructions shall begin until the instruction completes. All fence instructions on all cpus shall occur in some total order.
 
-All operations described in this section are totally atomic.
+All operations described in this section are totally atomic with respect to the first operand.
 wcmpxchg exists to permit efficient implementations which can be made use of when reliable success is not necessary. Both cmpxchg and wcmpxchg act as though they always write to the destination
 
 The `fence` instruction is analogous to the C++11 function `std::atomic_thread_fence`, called with `std::memory_order_seq_cst`.

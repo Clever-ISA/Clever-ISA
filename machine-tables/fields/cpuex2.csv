@@ -8,3 +8,4 @@ bit,name,extension
 11,VEC,X-vector
 12,VIRT,X-virtualization
 13,NDRAND,X-rand
+15,TXMEM,X-transactional-memory

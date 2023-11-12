@@ -1,9 +1,10 @@
 bit,name,extension
 0,PG,X-main
 1,IE,X-main
-3-5,PTL,X-main
+3,XMINTRDEFER,X-transactional-memory
 6,FPEN,X-float
 7,FPEXCPT,X-float
 8,VEC,X-vector
 9,XMRAND,X-rand
 10,RPOLLINFO,X-rand
+12,TXMEM,X-transactional-memory
