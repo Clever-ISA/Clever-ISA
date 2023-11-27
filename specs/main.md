@@ -293,20 +293,25 @@ When a load operation `a`, accesses a byte, and takes the value for that byte fr
 
 If a load operation `a` is part of a locked read-modify-write, then any memory operation visible to `a` is visible to the store part of the same read-modify-write.
 
-### Fence and Global Synchronization Order
+### Synchronization Operations and Global Synchronization Order
 
-A `fence` instruction that is executed on a CPU is placed in a single, totally ordered, list of all such `fence` instructions executed accross all CPUs on the same machine, known as the global synchronization order. The order these instructions are placed on this list is unspecified, subject to the following rules:
-1. A `fence` instruction that is executed on the CPU is placed in the Global Synchronization Order before each `fence` instruction executed after it on the same CPU.
-2. If a `fence` instruction `Fa` precedes a memory operation `Ma` executed on the same CPU as `Fa`, and there exists a memory operation `Mb` which preceeds a `fence` instruction `Fb` executed on the same CPU as `Mb`, such that `Ma` is visible to `Mb`, then `Fa` is placed in the global synchronization order prior to `Fb`.
-3. If a `fence` instruction `Fa` preceeds a store `Sa` executed on the same CPU as `Fa`, and there exists a store `Sb`, that preceeds a `fence` instruction `Fb` on the same CPU as `Sb`, and there exists a byte `B`, such that `Sa` is placed in the Store List of `B`, and `Sb` is also placed in the Store List of `B` after `Sa`, then `Fa` is placed in the global synchronization order prior to `Fb`.
-4. If a `fence` instruction `Fa` preceeds a store `Sa` executed on the same CPU as `Fa`, and there exists a load `Lb`, that preceeds a `fence` instruction `Fb` on the same CPU as `Sb`, and there exists a byte `B` which is accessed by both `Sa` and `Lb`, such that `Lb` takes the value of `B` from `Sa`, then `Fa` is placed in the global synchronization order prior to `Fb`.
+A memory operation `A` is *synchronization ordered before* another memory operation `B` if:
+1. `A` is visible to `B`,
+2. `A` and `B` are both stores that store to any of the same bytes, and `A` preceeds `B` in the Store List of all of those bytes,
+3. `B` is a load and `A` is a store that accesses any of the same bytes, and `B` take the value of any of those bytes from `A`,
+4. There exists a memory operation `C`, such that `A` is *synchronization ordered before* `C`, and `C` is *synchronization ordered before* `B`.
 
-A `fence` instruction can be used to make memory operations visible accross cores.
-In particular:
-1. If `Ma` is a memory access that preceeds a `fence` instruction `Fa` executed on the same CPU as `Ma`, and `Fb` is a `fence` instruction that preceeds a memory operation `Mb` executed on the same CPU as `Fb`, such that `Fa` is placed in the global synchronization order prior to `Fb`, then `Ma` is visible to `Mb`.
-2. If `N` is a memory access which is visible to some other memory access `Ma` that preceeds a `fence` instruction `Fa` executed on the same CPU as `Ma`, and `Fb` is a `fence` instruction that preceeds a memory operation `Mb` executed on the same CPU as `Fb`, such that `Fa` is placed in the global synchronization order prior to `Fb`, then `N` is visible to `Mb`.
+Certain operations, known as synchronization operations, participate in a global total order, known as the Global Synchronization Order. This order is constrained as follows, given two synchronization operations `Sa` and `Sb`:
+1. If `Sb` is executed after `Sa` on the same thread of execution, then `Sa` preceeds `Sb` in the global synchronization order
+2. If a memory operation `Ma` is executed after `Sa` on the same CPU, and there exists a memory operation `Mb`, such that `Mb` is an eligible memory operation with respect to `Sb`, and `Ma` is *synchronization ordered before* `Mb`, then `Sa` preceeds `Sb` in the global synchronization order
 
-Other instructions participate in the Global Synchronization Order, but do not cause memory operations to become visible. In particular the privileged `in` and `out` instructions are placed in the Global Synchronization Order under the rules of this section as though they were replaced with a `fence` instruction. 
+
+Certain operations that participate the Global Synchronization Order may make certain memory operations visible accross CPUs. For a given synchronization operation `S`, a memory operation `A` is considered an "eligible memory operation" with respect to `S` if:
+1. `S` is executed after `A` on the same CPU, or
+2. There exists a memory operation `B`, such that `B` is an eligible memory operation with respect to `S` and `A` is visible to `B`.
+
+If a memory operation is an eligible memory operation with respect to some synchronization operation, it may be a "Visibility Candidate" for that synchronization operation. Subsequent synchronization operations in the Global Synchronization Order may make Visibility Candidates of preceeding ones visible to memory operations that execute after it on the same CPU.
+
 
 ### Execution and Instruction Visibility
 
@@ -895,7 +900,9 @@ Memory Effects:
 - Inserts a `Fence` element to the Global Synchronization Order. 
 
 Instructions:
-- 0x203 (fence): Makes memory accesses visible accross CPUs according to the behaviour of the `Fence` memory operation. All memory accesses that preceed the `fence` instruction on the same CPU, and all memory accesses visible to those accesses are made accesses that follow subseqeunt `Fence` memory operations in the Global Synchronization order on the same CPU as the corresponding `fence` instruction. Additionally makes these memory operations visible to CPUs that execute the privileged `flall` instruction, or the privileged `dflush` or `iflush` instructions (where the access accesses any byte that is refered to by its operand). All `fence` instructions participate in the Global Synchronization Order.
+- 0x203 (fence): Makes memory accesses visible accross CPUs according to the behaviour of the `Fence` synchronization operation. 
+
+All eligible memory operations are Visibility Candidates for a given Fence operation. A Fence operation makes all Visibility Candidates from each preceeding synchronization operation in the Global Synchronization Order visible to all memory operations that follow it in the global synchronization order.
 
 The `fence` instruction is analogous to the C++11 function `std::atomic_thread_fence`, called with `std::memory_order_seq_cst`.
 
@@ -1147,14 +1154,19 @@ Memory Effects:
 - Inserts `PageFlush`, `GlobalFlush`, `DataFlush`, or `ExecFlush` respectively to the Global Synchronization Order
 
 Instructions:
-- 0x802 (pcfl): Causes all page caches to be flushed. This also causes ptbl to be checked (even if cr0.PG!=0). 
-- 0x803 (flall): Flushes data, instruction, and page caches on the current CPU. Causes Memory Operations to become visible as though the instruction was a `fence` instruction, and additionally makes all such memory operations Execution Visible on the current CPU.
-- 0x804 (dflush): Flushes the Data Cache for the given address. Makes all memory operations referring to any byte in the memory region named by operand visible as though the instruction was a `fence` instruction. 
-- 0x805 (iflush): Flushes the instruction cache for the given address. Makes all memory operations that preceed it on the current CPU, made visible by those instructions, and any memory operation visible by any `fence`, `dflush`, or `flall` instruction that preceeds it in the Global Synchronization Order Execution Visible on the current CPU for any Instruction Fetch that refers to a byte in the memory region named by the operand.
+- 0x802 (pcfl): Causes all page caches to be flushed. This also causes ptbl to be checked (even if cr0.PG!=0). Performs the `PageFlush` synchronization operation.
+- 0x803 (flall): Flushes data, instruction, and page caches on the current CPU. Performs the `GlobalFlush` synchronization operation
+- 0x804 (dflush): Flushes the Data Cache for the given address. Performs the `DataFlush` synchronization operation on all bytes refered to by the operand
+- 0x805 (iflush): Flushes the instruction cache for the given address.  Performs the `ExecFlush` synchronization operation on all bytes refered to by the operand. If the memory operand is larger than size 1, it must be aligned to at least 2 bytes.
 
-`iflush` and `flall` can make operations Execution Visible without a forcing control transfer. 
+All eligible memory operations are Visibility Candidates of a `GlobalFlush` operation. All Visibility Candidates of all preceeding synchronization operations in the global synchronization order are made visible to memory operations executed after it on the same CPU, and each of those memory operations and the Visibility Candidates of the `GlobalFlush` operation are additionally made Execution Visible to subsequent instruction fetches on the same CPU. This operation is strictly stronger than the `fence` instruction.
 
-Only memory operations that refer to any byte in the same memory region as the operand are made visible by the `dflush` and `iflush` instructions. Additionally, such memory operations are only made visible to memory operations or instruction fetches that access any byte in that same memory region. 
+All eligible memory operations that access any byte refered to by the operand are Visibility Candidates of a `DataFlush` instruction. All Visibility Candidates of all preceeding synchronization operations in the global synchronization order that access any of those bytes are made visibile to memory operations after it on the same CPU.
+
+For an `ExecFlush` synchronization operation, all eligible memory operations, and all Visibility Candidates of synchronization operations that preceed it in the global synchronization order that access any of the bytes refered to by the operand are made Execution Visible to any subsequent instruction fetch that reads any of those bytes.
+
+The `PageFlush` synchronization operation does not make any Visibility Candidates visible to any subsequent memory operation, and does not have any Visibility Candidates. It still participates in the global synchronization order.
+
 
 ### I/O Transfers
 
@@ -1173,15 +1185,16 @@ Memory Effects:
 - Inserts `IO` to the Global Synchronization Order.
 
 Instructions:
-- 0x806 (in): Reads `ss` bytes from the I/O Device at the address given in `r2` into `r0`.
-- 0x807 (out): Writes `ss` bytes from `r0` to the I/O Device at the address given in `r2`.
+- 0x806 (in): Reads `ss` bytes from the I/O Device at the address given in `r2` into `r0`. Performs the `IO` synchronization operation.
+- 0x807 (out): Writes `ss` bytes from `r0` to the I/O Device at the address given in `r2`. Performs the `IO` synchronization operation.
 
-I/O Device Addresses are 64-bit values, which correspond to some identifier assigned to devices. The I/O Device Addresses from 0x00000000-0xffffffff are reserved for use with this specification, future versions, and extensions thereof.
+I/O Device Addresses are 64-bit values, which correspond to some identifier assigned to devices. The I/O Device Addresses from 0x00000000-0xffffffff are reserved for use with this specification, future versions, extensions, and technical documents thereof.
 All other device addresses have machine specific use.
 
 If a device is not available on the machine, then reading it shall yield `0` and writing to it shall have no effect.
 
-Both `in` and `out` instructions participate in the global synchronization order
+The `IO` synchronization operation does not make any Visibility Candidates visible to any subsequent memory operation, and does not have any Visibility Candidates. It still participates in the global synchronization order.
+
 
 ### Mass Register Storage
 

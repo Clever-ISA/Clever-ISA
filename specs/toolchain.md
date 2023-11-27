@@ -62,15 +62,25 @@ Reads the Appropriate cpu information register
 
 Requires Supervisor Mode
 
-`void __xms_pcfl(void* __physical v)`
+`void __xms_pcfl(void* v)`
 
-Flush the page cache corresponding to the given physical address
+Flush the page cache corresponding to the given virtual address
 
 `void __xms_flall(void)`  
-`void __xms_dflush(void)`  
-`void __xms_iflush(void)`  
 
-Flush all (data, instruction, and page) caches, the data cache only, or the instruction cache only
+
+Flush all (data, instruction, and page) caches.
+
+`void __xms_dflush8(uint8_t* __virtual p)`  
+`void __xms_iflush8(uint8_t* __virtual p)`  
+`void __xms_dflush16(uint8_t* __virtual p)`   
+`void __xms_iflush16(uint8_t* __virtual p)`  
+`void __xms_dflush32(uint8_t* __virtual p)`  
+`void __xms_iflush32(uint8_t* __virtua p)`  
+`void __xms_dflush64(uint8_t* __virtual p)`  
+`void __xms_iflush64(uint8_t* __virtual p)`  
+
+Flushes data or instruction cache lines corresponding to the region of memory specified by `p` through to the number of bits in the name - for example, `__xms_dflush64(ptr)` flushes cache lines corresponding to `[ptr,ptr+8)`. 
 
 `uint8_t __xms_in8(uint64_t port)`  
 `uint16_t __xms_in16(uint64_t port)`  
@@ -86,17 +96,52 @@ Reads 8, 16, 32, or 64 bits from the I/O port with address `port`.
 
 Writes 8, 16, 32, or 64 bits to the I/O port with address `port`.
 
-#### Register Storage
+#### Atomic Compare and Exchange
 
-`void __store_gpr(unsigned long long out[16])`  
-`void __load_gpr(const unsigned long long out[16])`  
-`void __store_ar(unsigned long long out[128])`  
-`void __load_ar(const unsigned long long out[128])`  
-`void __store_regf(unsigned long long out[256]`  
+`_Bool __atomic_cmpxchg8(uint8_t* atomic, uint8_t* expected, uint8_t new)`  
+`_Bool __atomic_cmpxchg16(uint16_t* atomic, uint16_t* expeced, uint16_t new)`  
+`_Bool __atomic_cmpxchg32(uint32_t* atomic, uint32_t* expected, uint32_t new)`  
+`_Bool __atomic_cmpxchg64(uint64_t* atomic, uint64_t* expected, uint64_t new)`  
 
-Stores or loads the general purpose registers, user registers, or entire register file to/from the memory designated by `out`. 
+Atomically compares the value of `*atomic` with `*expected` and stores `new` if they are the same value and returns `true`, otherwise loads `*atomic` into `*expected`, writes back the same value to `*atomic`, and returns `false`. The operation is performed as though by the `cmpxchg` instruction.
 
-`__store_regf` requires supervisor.
+`_Bool __atomic_wcmpxchg8(uint8_t* atomic, uint8_t* expected, uint8_t new)`  
+`_Bool __atomic_wcmpxchg16(uint16_t* atomic, uint16_t* expeced, uint16_t new)`  
+`_Bool __atomic_wcmpxchg32(uint32_t* atomic, uint32_t* expected, uint32_t new)`  
+`_Bool __atomic_wcmpxchg64(uint64_t* atomic, uint64_t* expected, uint64_t new)`  
+
+Same as `__atomic_cmpxchgN` but performs the operation by the `wcmpxchg` instruction instead of the `cmpxchg` instruction.
+
+For the purposes of language memory models, toolchains may assume that `*expected` is accessed non-atomiclly, and the function always performs an atomic read-modify-write to `*atomic` with equivalent memory effects to `memory_order_acq_rel.`
+
+These intrinsics are provided to expose the stronger memory model of the ISA to program code, as typically equivalent language-level operations for atomic compare-exchange do not perform a write-back on failure or permit using `memory_order_acq_rel` as the failure ordering, to expose the stronger guarantees of the instruction set to programs. 
+
+
+`_Bool __atomic_cmpxchg128(uint128_t* atomic, uint128_t* expected, uint128_t new)`  
+`_Bool __atomic_cmpxchg128(__v128* atomic, __v128* expected, __v128 new)`  
+`_Bool __atomic_cmpxchg128(uint128_t* atomic, uint128_t* expected, __v128 new)`  
+`_Bool __atomic_wcmpxchg128(uint128_t* atomic, uint128_t* expected, uint128_t new)`  
+`_Bool __atomic_wcmpxchg128(__v128* atomic, __v128* expected, __v128 new)`  
+`_Bool __atomic_wcmpxchg128(uint128_t* atomic, uint128_t* expected, __v128 new)`  
+
+Equivalent to other `__atomic_cmpxchgN` or `__atomic_wcmpxchgN` intrinsics, for 128-bit values. Only defined if `X-vector` is available. The signature mixing `uint128_t` and `__v128` is optional to define.
+
+
+
+#### Special Memory Barrier Operations
+
+`void __memory_fence(void)`
+
+Issues the `fence` instruction to synchronize memory operations accross threads.
+
+`void __global_fence(void)`
+
+Issues a `fence` instruction followed by a forcing control transfer to synchronize memory operations accross threads and to synchronize memory operations with instruction execution.
+
+
+`void __instruction_fencex(void)`
+
+Same as `__global_fence`, but only guarantees synchronization of memory operations with instruction execution, and toolchains are permitted to lower to different instructions than `__global_fence` which provide those weaker guarantees when such instructions are available. 
 
 ### Floating Point Operations
 
