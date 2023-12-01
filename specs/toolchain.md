@@ -134,14 +134,20 @@ Equivalent to other `__atomic_cmpxchgN` or `__atomic_wcmpxchgN` intrinsics, for 
 
 Issues the `fence` instruction to synchronize memory operations accross threads.
 
+For the purposes of language memory models, toolchains may assume that this operation performs a sequentially-consistent read-modify-write of a memory location
+ that no operation not in this section accesses.
+
 `void __global_fence(void)`
 
 Issues a `fence` instruction followed by a forcing control transfer to synchronize memory operations accross threads and to synchronize memory operations with instruction execution.
 
+For the purposes of language memory models, this intrinsic has the same memory effects as `__memory_fence()`.
 
 `void __instruction_fencex(void)`
 
 Same as `__global_fence`, but only guarantees synchronization of memory operations with instruction execution, and toolchains are permitted to lower to different instructions than `__global_fence` which provide those weaker guarantees when such instructions are available. 
+
+For the purposes of language memory models, toolchains may assume that this operation performs a sequentially-consistent load of a memory location and discards the result.
 
 ### Floating Point Operations
 
