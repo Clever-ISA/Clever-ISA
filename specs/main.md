@@ -1193,7 +1193,17 @@ All other device addresses have machine specific use.
 
 If a device is not available on the machine, then reading it shall yield `0` and writing to it shall have no effect.
 
-The `IO` synchronization operation does not make any Visibility Candidates visible to any subsequent memory operation, and does not have any Visibility Candidates. It still participates in the global synchronization order.
+#### Memory Effects of an I/O Transfer
+
+An I/O Device accessed by an `in` or `out` instruction, may access memory. The full memory effects of such operations are documented here.
+
+By Default, The `IO` synchronization operation does not make any Visibility Candidates visible to any subsequent memory operation, and does not have any Visibility Candidates. It still participates in the global synchronization order.
+
+An out instruction `O` that reads from or writes to memory as part of its I/O operation will observe all eligible memory operations, and all visibility candidates of synchronization operations that preceed `O` in the global synchronization order, according to the memory model. If the operation accesses a byte B, such that B is modified by a memory operation that occurs later in the store list of byte B than the last store to byte B which is an eligible memory operation `O`, it is unspecified whether the I/O operation will observe `O`. 
+
+An out instruction `O` that reads from or writes to memory may "Start a DMA Transfer" with respect to certain memory locations. A subsequent out instruction or in instruction `R` may then "Report on the DMA Transfer Started by O". R includes, as its set of visibility candidates, the memory accesses performed by the DMA Transfer started by O. 
+
+_Note: `R` alone does not make those candidates visible, and a `fence` instruction or a cache flush instruction is needed to make the result of the DMA Transfer Visible._
 
 
 ### Mass Register Storage
