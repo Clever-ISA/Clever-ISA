@@ -230,25 +230,199 @@ Opcode:
 
 ## Memory Model
 
-When performing reads and writes to memory, machines with multiple CPUs perform each memory access atomically, and in a way that ensures that locally well-ordered operations are realtively well-ordered with other CPUs and with interrupt/exception handlers. In particular any write that occurs on a CPU shall make visible to all other CPUs that read the value written the value of all previous stores (note: this is intended to be consistent with the "release" ordering of the C++20 Memory Model, with reads acting as acquire operations).
-Interrupts other than exceptions shall not intervene between two parts of any single memory access, but may interrupt the following instructions during execution:
-- halt
-- Any operation with a repc or rep*cc* prefix, as long as an individual instruction has completely fully
+### Definitions
 
-Further, if a memory access would cause an exception, the observable behaviour of that instruction shall be as-if the entire memory access did not occur, even if part of it could be performed without an exception (for example, if a multibyte memory access crosses a page boundary into a not present page, or exceeds the virtual or physical address constraints). 
-Additionally, if an instruction causes an exception, the observable behaviour of that instruction shall be as-if no write was performed (Note: it is permissible that the instruction read any memory reference partially or completely before raising the exception). 
+Memory Operations: An operation (instruction or machine action) that accesses (reads or writes) one or more bytes in memory, or a locked read-modify-write instruction performed on one or more bytes in memory.
 
-Certain instructions are reffered to as being totally atomic (for example, instruction 0x200, and instructions with the `l` bit set in `h`). These instructions perform a read-modify-write on destination if it is a memory operand (otherwise, if the destination is a register, then it is equivalent to merely reading the source operand). The entire instruction acts as though it is a single memory operation that is both a read and a write, and no write on a different thread of execution occurs between the read of the destination operand and the write of the result to that operand. 
+Byte: A discrete, 8-bit, region in Physical Memory at a specific address.
 
-### Execution Memory Model
+Memory Location: A region of bytes accessed by a Memory Operation, with some size
 
-Instructions executed by the program fetched from `ip`, as well as operands fetched for that execution, are exempt from the above rules. If instructions a CPU executes modifies memory concurrently being executed by a different CPU, the results of those writes, whether the writes are obseved completely (tearing), and the timing of those writes are unspecified. It is ensured that undefined results do not occur.
-Additionally, writes from within a CPU to the instruction stream executed by that CPU are not guaranteed to be reflected until that CPU either executes a iflush or flall instruction, or modifies the `mode` register (for example, via the `syscall` instruction). However, it is guaranteed that if any write from a particular is observed to a particular instruction opcodes or operand, then the entire write is observed by that particular instruction opcode or operand (that is, it does not tear within a particular instruction word), but a partial write may be observed accross instruction opcodes or operands. 
-The fetching of entire immediate values, may tear under the conditions above on every aligned 2 byte boundery.
+Execution Order on a CPU: The order in which each instruction is dispatched in the CPU, which is linear from the instruction stream.
 
-Each discrete element of the instruction stream is a multiple of two bytes. These elements, and thus the value of the `ip` register, is aligned to 2 bytes. 
-The target of any branch, direct or indirect, including implicit branches (such as the `ret`, `iret`, `scret` instructions) and asynchronous branches (ie. for exception/hardware interrupt handlers), must be an address that's a multiple of two. Failing this requirement triggers the XA (Execution Alignment) Exception. 
-Other address constraints apply. 
+Store List: A total order List of all store operations that modify a Byte in memory.
+
+Global Synchronization Order: A total order List of all global synchronization operations executed accross all CPUs.
+
+### Stores and Store List on memory locations
+
+Each byte of memory has a total order list, called the Store List, of all stores to that memory location. Each store that modifies a particular memory region is placed in this order. Stores that occur on a single CPU are placed in this list in execution order on that CPU. Stores that occur across multiple CPUs are placed on this list in a nondeterministic order, subject to the rules in this specification.
+
+Each complete memory operation that stores to a memory location is indivisible. If two memory operations, a and b, both store to multiple of the same bytes in memory, then `a` and `b` will be placed in the Store List of all of those bytes in the same order relative to each other. This is true even if `a` and `b` do not access all of the same bytes. 
+
+A memory operation is visible to each other store operation that is executed after it on the same CPU.
+
+
+### Loads and Store-Load/Load-Load Coherence
+
+Each memory operation that loads from a byte takes the value from some store to that byte in the Store List of that byte. If a memory operation loads from multiple bytes, the value loaded from each byte is taken from the Store List of each of those bytes as follows:
+1. If any byte value is taken from a particular store, then each other byte that the load access which that store is also part of the Store List for will take the value from either that store, or a store later in the store list of that byte. 
+- _Note: This rule is sufficient to prevent tearing when mixed size or partially overlapping accesses to the same memory location are not used, and to limit tearing to precisely the boundaries of a partially-overlapping memory access when they are._
+3. If a store is visible to a load which accesses any byte which the store is part of the Store List for, then the value for that byte is taken from that store, or any store later in the store list for that byte.
+4. If there are two loads, `a` and `b`, such that `a` is visible to `b`, and `a` and `b` load from any of the same bytes, then for each of those bytes, if `c` was the store which `a` took the value of that byte from, then `b` takes the value of that byte from `a` or a store later in the store list for that byte.
+
+Each store that is in the Store List of a particular byte is visible to each load executed after it on that CPU, which accesses that byte of memory.
+
+Each load that access from a particular byte is visible to each other load executed after it on that CPU that access that byte.
+
+### Store-Store and Load-Store Coherence
+
+If there are two stores, `a` and `b`, such that `a` is visible to `b`, then for each byte that both `a` and `b` accesses, `b` is placed in the Store List of that byte after `a`.
+
+If there is a load `a` and a store `b`, such that `a` is visible to `b`, then for each byte accessed by `a`, the value taken for that byte is one stored by a store which preceeds `b` in the Store List of that byte.
+
+The order which memory operations becomes visible to all other memory operations shall be acyclical. That is, given three memory operations, `a`, `b`, and `c`, such that `a` is visible to `b`, and `b` is visible to `c`, `c` shall not be visible to `a`. 
+
+### Locked read-modify-writes
+
+Certain instructions that both read and write memory can be "locked" (or are by default). These operations perform a locked read-modify-write operation on each byte.
+
+The store from a locked read-modify-write to each byte accessed appears immediately after the store which the load from that operation takes the value of that byte from in the Store List of that byte.
+
+A locked read-modify-write constitutes a single memory operation, rather than a distinct memory operation for the store and the load.
+
+The following instructions perform a locked-read-modify-write:
+* The `add`, `sub`, `and`, `or`, and `xor` ALU instructions, except for the GPR specializations of those instructions, with the `l` bit set in the `h` field of the instruction. 
+* The `xchg` instruction.
+* The `cmpxchg` and `wcmpxchg` instructions (including if the instruction failed).
+
+
+### Store-Load Synchronization
+
+When a load operation `a`, accesses a byte, and takes the value for that byte from a store, `b`, then each memory operation visible to `b` becomes visible to `a` and all memory operations executed after `a` on the same CPU.
+
+If a load operation `a` is part of a locked read-modify-write, then any memory operation visible to `a` is visible to the store part of the same read-modify-write.
+
+### Synchronization Operations and Global Synchronization Order
+
+A memory operation `A` is *synchronization ordered before* another memory operation `B` if:
+1. `A` is visible to `B`,
+2. `A` and `B` are both stores that store to any of the same bytes, and `A` preceeds `B` in the Store List of all of those bytes,
+3. `B` is a load and `A` is a store that accesses any of the same bytes, and `B` take the value of any of those bytes from `A`,
+4. There exists a memory operation `C`, such that `A` is *synchronization ordered before* `C`, and `C` is *synchronization ordered before* `B`.
+
+Certain operations, known as synchronization operations, participate in a global total order, known as the Global Synchronization Order. This order is constrained as follows, given two synchronization operations `Sa` and `Sb`:
+1. If `Sb` is executed after `Sa` on the same thread of execution, then `Sa` preceeds `Sb` in the global synchronization order
+2. If a memory operation `Ma` is executed after `Sa` on the same CPU, and there exists a memory operation `Mb`, such that `Mb` is an eligible memory operation with respect to `Sb`, and `Ma` is *synchronization ordered before* `Mb`, then `Sa` preceeds `Sb` in the global synchronization order
+
+
+Certain operations that participate the Global Synchronization Order may make certain memory operations visible accross CPUs. For a given synchronization operation `S`, a memory operation `A` is considered an "eligible memory operation" with respect to `S` if:
+1. `S` is executed after `A` on the same CPU, or
+2. There exists a memory operation `B`, such that `B` is an eligible memory operation with respect to `S` and `A` is visible to `B`.
+
+If a memory operation is an eligible memory operation with respect to some synchronization operation, it may be a "Visibility Candidate" for that synchronization operation. Subsequent synchronization operations in the Global Synchronization Order may make Visibility Candidates of preceeding ones visible to memory operations that execute after it on the same CPU.
+
+
+### Execution and Instruction Visibility
+
+Each Instruction fetch loads two bytes, aligned to two bytes, from memory on a given CPU, as follows in this section. _Note: The fetching of an entire instruction may require more than one instruction fetch, each act as though they were independent fetches for the purpose of the memory model_
+
+
+ Let `B0` designate the byte fetched from the low order (even numbered) address, and `B1` designate the byte fetched from the high order (odd numbered) address. Let `S0` be the latest store in the Store List of `B0` which is Execution Visible to the current instruction fetch, and let `S1` be the latest store in the Store List of `B1` which is Execution Visible to the current instruction fetch. The value taken for the instruction fetch is taken from stores `K0` to `B0` and `K1` to `B1`, where `K0` and `K1` are determined as follows:
+1. `K0` is either `S0` or a store which follows `S0` in the Store List of `B0`. `K1` is either `S1` or a store which follows `S1` in the Store List of `B0`.
+- _Note: This rule ensures that each forcing control transfer synchronizes the instruction stream with each visible store to the instruction stream_
+2. If `K0` occurred on the same CPU as the instruction fetch, then `K0` shall have preceeded the instruction which is being fetched currently on that CPU, and if `K0` is in the Store List of `B1`, then `K1` is either `K0` or a store which follows `K0` in the Store List of `B1`. 
+3. If `K1` occurred on the same CPU as the instruction fetch, then `K1` shall have preceeded the instruction which is being fetched currently on that CPU, and if `K1` is in the Store List of `B0`, then `K0` is either `K1` or a store which follows `K1` in the Store List of `B1`.
+- _Note: This rule ensures that instruction fetches can tear stores on the same CPU at most every two bytes, and that instruction fetches are not circular to stores that are executed as a result of the fetched instructions_
+
+
+A Forcing Control Transfer Operation has the same visibility effects as a store to some unspecified memory location which is not accessed by any other memory operation, except for a Forcing Control Transfer Operation executed on the same CPU (all such Forcing Control Transfer Operations access this memory location). The visibility of memory operations to a Forcing Control Transfer Operation, and the visibility of the Forcing Control Transfer Operation, is independent of the visibility of any memory operation performed at the same time. Any memory operation which is visible to the Forcing Control Transfer Operation is made Execution Visible to all subsequent instruction fetches performed on the same CPU in execution order.
+
+_Note: For example, though the `retrsm` instruction both loads from memory (popping the return address and return mode value from the stack) and performs a Forcing Control Transfer, memory operations visible to the Forcing Control Transfer are not necessarily made visible to the load, nor are memory operations visible to the load necessarily made visible to the Forcing Control Transfer_
+
+The privileged `iflush` and `flall` instructions additionally make memory accesses Execution Visible to subsequent instruction fetches.
+
+## Instruction Descriptions
+
+Instructions and Instruction Groups are described by specifying the following information, with the given prefixes:
+- Opcode (or Opcodes): The Opcode or Opcodes in the Group
+- Operands: The number of Operands of each Instruction in the Group
+- Operand Constraints: Semantic constraints placed on each operand for each Instruction in the group
+- h field: The H Field of each instruction in the group
+- Exceptions: The Exceptions, if any, which may be generated by the Instructions in the Group
+- Flags: Modifications to the `flags` register, if any
+- Memory Effects: The Effects, if any, the instruction has on the Memory Model
+- Instructions: The list of each instruction in the group (with a suggested mnemonic for assemblers), and the behaviour of each of those instructions.
+
+Followed by any notes, common behaviour, or special handling indicators that don't belong in the previous section.
+
+## Generated Exceptions
+
+Each Instruction executed may, instead of performing any behaviour specified, generate an [Exception](#exceptions).
+
+Each Instruction, in its description, lists all of the Exceptions that can be raised as part of executing the Instruction. 
+Additionally, certain other Exceptions occur based on the decoding of the instruction. This includes Decoding Exceptions (UND or PROT), and Page Faults generated by instruction fetches.
+
+If an exception occurs, no register or memory is modified by the instruction execution, no branch occurs as a result of the instruction execution. Additionally, unless the exception is denoted by a `*` following its name, no memory effects are performed by the instruction (Such exceptions are used when the value of the operand must be determined to raise the exception). Such denoted exceptions are referred to as "After-loads Exceptions" or "Late Execution Exceptions".
+
+When an instruction generates an exception is not considered stable (Except for `UND` issued by opcodes 0x000 and 0xFFF), and an exetension may change what exceptions are generated by instructions, or cause an instruction that would previously generate an exception to have some specified behaviour. In the case of instructions accessible to user programs (Opcodes 0x000 through 0x7FF and 0xFFF), the supervisor will be required to opt-in to the change by performing some action (typically setting a unique bit in `cr0`) that would have generated an exception (or had undefined behaviour) without that extension. 
+
+### Fetch Paging Faults
+
+When any part of the instruction is fetched from memory, the address of the fetch is validated as a memory operand for read access (as though by [memory operand validation](#memory-operand-validation-execution)) and paging faults are thrown, as though the access has size 1 and the least significant byte of the fetch is referenced by the memory operand, with the following exceptions:
+* If the lpe permission field is `READ` or `WRITE`, `PF` is raised
+* If the lpe entry or any npe entry has `SXP=1`, and `mode.XM=0`, `PF` is raised
+
+### Illegal/Undefined Instructions (Decoding)
+
+In certain cases, an instruction fetched from the stream is considered illegal in decoding. This is the case if the instruction is not defined, or if any reserved bit in the h field is set to `1`. 
+These checks are performed before any operands are fetched (thus, `PF` will not occur if the operands reside on a different page). 
+Instructions that cause a UND exception (and no other exceptions) based on h bits *may* also have this check performed during decoding, prior to any operands being fetched. 
+Additionally, privileged instructions that cause a `PROT` exception when executed with `mode.XM=1`, *may* have this check performed during instruction decoding, prior to any operands being fetched. In this case, if any instruction decoding check performed would raise `UND`, and `PROT` would also be generated, then the `UND` exception is raised rather than `PROT`.
+
+
+### Operand Validation (Decoding)
+
+Each operand is validated as it is fetched. 
+An invalid operand control structure generates a `UND` exception after being read. No further operands are fetched, and page faults for these operands are not generated. This includes validating the immediate size specifier of immediate operands (but not the memory size specifier of memory operands)
+
+After all operands are fetched, the following validation steps are performed:
+* UND is raised if any register operand refers to a reserved or undefined register,
+* PROT is raised if any register operand refers to a supervisor register and `mode.XM=1`. 
+* UND is raised if any operand has an invalid size (including memory size for immediate operands)
+
+### Memory Operand Validation (Execution)
+
+Any Memory Operand that is accessed is validated according to paging rules. Any Memory Operand that is to be written to is validated for read/write access, and any memory operand that is to be read from is validated for read access. The validation occurs for the size of the memory operand. If an implicit access size is specified by the instruction, then that size is used instead, and the size of the memory operand is ignored. PFs are generated for validation failures. Some instructions that have memory operands do not perform any access to the memory. These memory operands are not validated.
+
+When Paging is disabled (`cr0.PG=0`), when validating memory accesses to nested or lower page tables, or when validating the resolved physical address of a virtual address:
+- Each memory operand is validated to the range specified by the value of `cpuex2.PAS`. Any memory address accessed is out of range, PF is generated.
+- If any memory operand refers to non-allocatable physical address, PF is generated
+
+When Paging is enabled (`cr0.PG=1`):
+- The ptbl register (`cr1`) is [validated](#page-table-format)
+- Each memory operand is validated as a canonical memory address, according to the value of `cr1.PTL`. The number of in-use virtual address bits is specified by `PTL`, and all more significant bits must be a copy of the most significant in-use virtual address bit. If the any address of the memory operand is not a canonical memory address, or any access to a memory address with a different most significant in-use virtual address bit then the address of the memory operand, `PF` is generated
+- For each byte accessed by the memory operand, Each nested level of the page table is indirected using the offset from the appropriate in-use bits of the virtual address, and the relevant entry is [validated](#page-table-format). If the level is not present, or has the `XM` bit clear while (`mode.XM=1`), `PF` is generated. The memory access to each nested page table is validated 
+- For each byte accessed by the memory operand, The lowest level page table is indirected using the last 9 bits of the address before the page offset (least significant 12 bits of the address). If the lpe permission field is ABSENT, then `PF` is generated. If the access to that memory operand is a write access, and the lpe permission field is `READ` or `EXEC`, then `PF` is generated.
+- The resolved physical address (the page physical address for the byte, offset by the page offset in the address) is then validated
+
+
+All Memory Operand Validation occurs before any Memory Operand is accessed - Memory Operand Validation is not performed as Late 
+
+### Operand Writeback Validation (Late Execution)
+
+In addition to the requirements of the instruction, prior to any register operand being modified, writeback validation is performed for all register operands that will be modified. Writeback validation only generates a `UND` exception.
+
+A `UND` exception occurs in the following cases:
+* A read-only register (`ip`, `mode`, CPUInfo registers, or implementation-defined machine-specific control registers) are refered to by a register operand that is to be modified
+* A control register (`cr0`, `cr2`, `cr5`, `cr7`, or implementation-defined machine-specific control registers) are referred to by a register operand that is to be modified, and a reserved or undefined bit would be set to 1 by the writeback.
+* Implementation-defined machine-specific control registers would be modified to have a state deemed invalid by an implementation-defined validation check.
+
+
+### Exception Ordering
+
+Exceptions are ordered in the following steps. If two exceptions are generated in the same steps, the order is unspecified. This order may be refined by future extensions:
+1. Instruction Fetch (Opcode bytes only) PF 
+2. Instruction Decoding Exceptions (UND only)
+3. Instruction Decoding Exceptions (PROT only), if any
+4. For each operand
+    1. Operand fetch PFs
+    2. Operand Control Structure validation Exceptions
+5. Operand Validation Exceptions (after fetch)
+6. Execution (Specified) Exceptions (Except Late Execution Exceptions), Paging Faults
+7. Late Execution Exceptions and Operand Writeback Validation Exceptions
+
+If no memory effects (other than stores) would occur for a particular exception, then Late Execution Exceptions (Step 7 Exceptions) are not treated specially and occur in step 6.
 
 
 ## Program Instructions
@@ -290,6 +464,11 @@ Exceptions:
 - PF, if the first operand is a memory operand, and page protections are violated by the access
 - PF, if paging is disable, and a memory operand accesses an out of range physical address
 - PROT, if a memory operand is out of range for the PTL mode.
+
+Memory Effects:
+- Load from operand 2.
+- If `l` is not set in `h`, a load and a store to operand 1.
+- If `l` is set in `h`, a locked read-modify-write to operand 1.
 
 Flags:  Sets C, M, V, and Z according to the result of the operation, unless the `f` bit is set in `h`
 
@@ -339,6 +518,11 @@ Exceptions:
 - PROT, if a memory operand is out of range for the PTL mode.
 
 Flags: Except opcode 0x009, Sets M and Z according to the result of the operation.
+
+Memory Effects:
+- Opcodes 0x008. 0x009, and 0x00B, store to operand 1
+- Opcodes 0x008, load from operand 2
+- Opcode 0x00A, load from operand 1
 
 Instructions:
 - 0x008 (mov): Moves the value of the second operand into the first
@@ -390,6 +574,12 @@ Exceptions:
 - PROT, if the target address is out of range for the PTL mode.
 - PF, if a memory operand accesses an unavailable virtual memory address
 
+Memory Effects:
+- Opcode 0x014, load from operand 1
+- Opcodes 0x014 and 0x016, store to `double [r7-8]`
+- Opcode 0x015, store to operand 1
+- Opcode 0x015 and 0x017, load from `double [r7]` 
+
 Instructions:
 - 0x014 (push): Decrements sp by 8, then stores the (potentially zero extended) 8-byte value in the operand to the address indicated by sp
 - 0x015 (pop): Loads the 8-byte value from the address indicated by sp, and stores it in the operand, then increments sp by 8
@@ -418,19 +608,26 @@ Exceptions:
 - PF, if paging is disable, and the target address is an out of range physical address
 - PROT, if the target address is out of range for the PTL mode.
 - PF, if a memory operand accesses an unavailable virtual memory address
-- PROT, If opcodes 0x01b or 0x01f are used to load a value other than 0 into a reserved or unavailable register.
+- PROT*, If opcodes 0x01b or 0x01f are used to load a value other than 0 into a reserved or unavailable register.
+
+Memory Effects:
+- Opcodes 0x018 and 0x01C, store to `128 [#1]` or `128 [r7-128]`
+- Opcodes 0x019 and 0x01D, 8 stores to `128 [#1+128*N]` or `128 [r7-1024+128*N]` where `N∈[0,8)`. The order of the stores relative to each other is unspecified.
+- Opcodes 0x01A and 0x01E, load from `128 [#1]` or `128 [r7]`
+- Opcodes 0x01B and 0x01F, 8 loads from `128 [#1+128*N]` or `128 [r7+128*N]` where `N∈[0,8)`. The order of the loads relative to each other is unspecified.
 
 Instructions:
 - 0x018 (stogpr): Stores the value of each general purpose register (0<=r<16) to the memory operand.
-- 0x019 (stoar): Stores the value of each program register (0<=r<32) to the memory operand. Any reserved or unavailable floating-point register stores 0 instead.
+- 0x019 (stoar): Stores the value of each program register (0<=r<128) to the memory operand. Any reserved or unavailable floating-point register stores 0 instead.
 - 0x01a (rstogpr): Loads the value of each general purpose register (0<=r<16) from the memory operand. 
-- 0x01b (rstoar): Loads the value of each program register (0<=r<32), other than `ip`, from the memory operand. The value of any reserved or protected bit in `flags` is ignored in the memory region.
+- 0x01b (rstoar): Loads the value of each program register (0<=r<128), other than `ip`, from the memory operand. The value of any reserved or protected bit in `flags` is ignored in the memory region.
 - 0x01c (pushgpr): Pushes the value of each general purpose register (0<=r<16) to the stack. Lower memory addresses (closer to the stack head) store lower numbered registers.
-- 0x01d (pushar): Pushes the value of each program register (0<=r<32) to the memory operand. Any reserved or unavailable register stores 0 instead. Lower memory addresses (closer to the stack head) store lower numbered registers.
+- 0x01d (pushar): Pushes the value of each program register (0<=r128) to the memory operand. Any reserved or unavailable register stores 0 instead. Lower memory addresses (closer to the stack head) store lower numbered registers.
 - 0x01e (popgpr): Pops the value of each general purpose register from the stack.
-- 0x01f (popar): Pops the value of each program register (0<=r<32), other than `ip`, from the stack. The value of any reserved or protected bit in `flags` is ignored in the memory region.
+- 0x01f (popar): Pops the value of each program register (0<=r<128), other than `ip`, from the stack. The value of any reserved or protected bit in `flags` is ignored in the memory region.
 
-If the operand to `ldgpr` or `ldar` is an indirect register, the address to load each register from is determined prior to performing the operation. `pushgpr` and `pushar` update the value of the stack pointer after it is stored, and `popgpr` and `popar` do not update the value of the stack pointer after restoring it. The entire memory operation shall be atomic.
+If the operand to `ldgpr` or `ldar` is an indirect register, the address to load each register from is determined prior to performing the operation. `pushgpr` and `pushar` update the value of the stack pointer after it is stored, and `popgpr` and `popar` do not update the value of the stack pointer after restoring it. 
+
 
 ### Converting Moves
 
@@ -454,7 +651,10 @@ Exceptions:
 - PF, if paging is disable, and the target address is an out of range physical address
 - PROT, if the target address is out of range for the PTL mode.
 - PF, if a memory operand accesses an unavailable virtual memory address
-- PROT, If opcodes 0x01b or 0x01f are used to load a value other than 0 into a reserved or unavailable register.
+
+Memory Effects:
+- Load from operand 2
+- Store to operand 1
 
 Instructions:
 - 0x020 (movsx): Moves a signed integer operand from the second operand, to the first. If the second operand is smaller than the first, the highest bit is copied to each higher bit in the first operand.
@@ -468,36 +668,6 @@ Instructions:
 
 `bswap`, unlike other instructions, forbids heterogenous operand sizes, and both operands must be the same size.
 
-### Block Operations
-
-Opcodes: 0x028-0x02f
-
-Operands: None.
-
-h: For opcode 0x029, `[cccc]` where `cc` is the condition code encoding (see [Condition Code Encoding](#condition-code-encoding)). For opcodes 0x02a-0x02f,  `[00 ss]`, where `ss` indicates the size of each individual operation.
-
-Exceptions:
-- PF, if any address is an unavailable virtual memory address
-- PF, if page protections are violated by the access
-- PF, if paging is disable, and the target address is an out of range physical address
-- PROT, if the target address is out of range for the PTL mode.
-- PF, if a memory operand accesses an unavailable virtual memory address
-- PROT, If opcodes 0x01b or 0x01f are used to load a value other than 0 into a reserved or unavailable register.
-
-Flags: Opcodes 0x02a-0x02c set Z and M according to the value transferred. Opcodes 0x02d-0x02f set according to the comparison performed.
-
-Instructions:
-- 0x028 (repbi): Shall be immediately followed by a block operation (opcodes 0x02a-0x02f). Repeats the following operation until the condition is satisfied
-- 0x029 (repbc): Shall be immediately followed by a block operation (opcodes 0x02a-0x02f). Repeats the following operation and decrements r1 until the condition is satisfied, or r1 is 0.
-- 0x02a (bcpy): Loads the value (according to `ss`) at the address in r4, and stores it to the address in r5, then adds `ss` to both r4 and r5.
-- 0x02b (bsto): Stores the value (according to `ss`) in r0 into the address in `r5`, then adds `ss` to `r5`.
-- 0x02c (bsca): Loads the value (according to `ss`) from the address in `r4` into `r0`.
-- 0x02d (bcmp): Compares the value (according to `ss`) at the address in `r4` with the value at the address in `r5` and sets the corresponding flags, then adds `ss` to both `r4` and `r5`.
-- 0x02e (btst): Compares the value (according to `ss`) at the address in `r4` with the value in `r0` and sets the corresponding flags, then adds `ss` to `r4`.
-
-Each Load and each Store operation performed by these instructions are atomic wrt. other memory accesses and memory operations performed under a memory lock. If repi or repc are used, note that each operation is individual. 
-
-block operations being performed by repbi or repbc may be interrupted by non-exception hardware interrupts, between the full completion of one operation and the execution of the following operation being repeated. If the instruction has not completed then the return instruction pointer saved by the interrupt shall point to the instruction, otherwise to the subsequent instruction. The full completion of the operation includes performing the prescribed repeated instruction, decrementing `r1` (for repbc) and testing the condition for the next iteration.
 
 ### Integer Shifts
 
@@ -521,6 +691,11 @@ Exceptions:
 - PROT, if a memory operand is out of range for the PTL mode.
 
 Flags: Unless `f` is set in `h`, sets M, and Z according to the result of the operation. Sets C if the last bit shifted out was 1. Sets V if the shift quantity exceeds the width of the first operand. 
+
+Memory Effects:
+- Load from operand 2.
+- Opcodes 0x030-0x37 only, If `l` is not set in `h`, a load and a store to operand 1.
+- Opcodes 0x030-0x37 only, If `l` is set in `h`, a locked read-modify-write to operand 1.
 
 Instructions:
 - 0x030 (lsh): Left Shifts the first operand by the second, shifting in 0 bits
@@ -565,6 +740,10 @@ Exceptions:
 - PF, if paging is disable, and a memory operand accesses an out of range physical address
 - PROT, if a memory operand is out of range for the PTL mode.
 
+Memory Effects:
+- Opcodes 0x046 and 0x047, if `l` is not set in `h`, a load followed by a store to operand 1
+- Opcodes 0x046 and 0x047, if `l` is set in `h`, a locked read-modify-write to operand 1
+
 Instructions:
 - 0x046 (bnot): Performs a bitwise negation of the operand.
 - 0x047 (neg): Negates the signed integer value in the operand.
@@ -591,6 +770,9 @@ Exceptions:
 - PF, if paging is disable, and a memory operand accesses an out of range physical address
 - PROT, if a memory operand is out of range for the PTL mode.
 
+Memory Effects:
+- A load from operand 1
+- Opcodes 0x046-0x04D, a store to operand 1
 
 Instructions: 
 - 0x041 (add*r*): Specialization of opcode 0x001 (add) where the destination operand is a gpr
@@ -623,6 +805,10 @@ Exceptions:
 - PF, if a memory operand violates page protections
 - PF, if paging is disabled, and a memory operand accesses an out of range physical address
 
+Memory Effects:
+- A load from operand 2
+- Opcode 0x069, a load from operand 3
+- If the condition is satisfied, a store to operand 1
 
 Flags: none
 
@@ -631,6 +817,8 @@ Instructions:
 - 0x069 (cmov): Specialization of `cmovt` where the third operand is implicitly the `flags` register.
 
 For `cmovt` the expected layout of the third operand is the same as the `flags` register. Any bits other than the least significant 5 bits are ignored and should be set to zero
+
+For the purposes of validating memory operands, both `cmov` and `cmovt` are treated as performing a write to the first operand. 
 
 ### Comparison Operations
 
@@ -645,7 +833,6 @@ Operand Constraints: At least one operand shall be an immediate value other than
 Exceptions: 
 - UND, if any operand constraint is violated. 
 - UND, if a reserved register is accessed by the instruction
-- UND, if a floating-point register is accessed, and cr0.FPEN=0
 - PROT, if a Supervisor register is accessed, and the program is in Program Execution Mode
 - UND, if the destination operand is the flags or ip register.
 - PF, if a memory operand accesses an unavailable virtual memory address
@@ -655,33 +842,67 @@ Exceptions:
 
 Flags: Opcode 0x06c and 0x06e, sets Z, N, M, and V according to the result. Opcode 0x06d and 0x06f, sets Z and M according to the result.
 
+Memory Effects:
+- A load from operand 1
+- Opcodes 0x06c and 0x06d, a load from operand 2
+
 Instructions:
 - 0x06c (cmp): Subtracts the second operand from the first, and sets flags based on the result. 
 - 0x06d (test): Computes the bitwise and of the first and second operands and sets flags based on the result.
 - 0x06e (cmp*r*): Same as cmp, but the first operand is the encoded general purpose register
 - 0x06f (test*r*): Same as test, but the first operand is the encoded general purpose register.
 
-
-All memory accesses are atomic wrt. other memory accesses and memory stores.
-
 ### Atomic Operations
 
 Opcodes: 0x200-0x203
-Operands: Opcode 0x200: 2, Opcode 0x201-0x202: 3, Opcodes 0x203: 0.
+Operands: Opcode 0x200: 2, Opcode 0x201-0x202: 3
 h: Reserved and shall be zero
 
 Operand Constraints: For Opcodes 0x200, at least one operand shall be a register and no operand may be an immediate value. For opcode 0x201 and 0x202, the neither the first nor second operand may be an immediate value, and at least one of the first and second shall be a register. 
 
 Flags: For Opcode 0x201 and 0x202, `Z` is set to the result of the comparison. 
 
+Memory Effects:
+- A locked Read-modify write to operand 1
+- A load from operand 2
+- Opcode 0x200, a store to operand 2
+- Opcodes 0x201 and 0x202, a load from operand 3
+- Opcodes 0x201 and 0x202, a store to operand 2 if the comparison fails
+
+Exceptions: 
+- UND, if any operand constraint is violated. 
+- UND, if a reserved register is accessed by the instruction
+- PROT, if a Supervisor register is accessed, and the program is in Program Execution Mode
+- UND, if the destination operand is the flags or ip register.
+- PF, if a memory operand accesses an unavailable virtual memory address
+- PF, if the first operand is a memory operand, and page protections are violated by the access
+- PF, if paging is disable, and a memory operand accesses an out of range physical address
+- PROT, if a memory operand is out of range for the PTL mode.
+
 Instructions:
 - 0x200 (xchg): Exchanges the value im the first operand with the second
 - 0x201 (cmpxchg): Compares the value in the first operand with the value in the second and stores the third in the first if the comparison sets the Z flag, otherwise the value in the first operand is stored in the second
 - 0x202 (wcmpxchg): Same as 0x201, but the comparison is permitted to spuriously fail
-- 0x203 (fence): Synchronizes memory accesses across cpus. Immediately before the instruction is executed, all memory operations performed on the current cpu by prior instructions shall be completed, and no new memory accesses performed on the current cpu by subsequent instructions shall begin until the instruction completes. All fence instructions on all cpus shall occur in some total order.
 
-All operations described in this section are totally atomic.
-wcmpxchg exists to permit efficient implementations which can be made use of when reliable success is not necessary. Both cmpxchg and wcmpxchg act as though they always write to the destination
+wcmpxchg exists to permit efficient implementations which can be made use of when reliable success is not necessary. 
+Both cmpxchg and wcmpxchg act as though they always write to the destination.
+
+For the purposes of validating memory operands, `cmpxchg` and `wcmpxchg` are always treated as performing a write access to the first and second operands.
+
+### Memory Synchronization Fence
+
+Opcode: 0x203
+Operands: 0.
+
+h: Reserved and shall be zero
+
+Memory Effects:
+- Inserts a `Fence` element to the Global Synchronization Order. 
+
+Instructions:
+- 0x203 (fence): Makes memory accesses visible accross CPUs according to the behaviour of the `Fence` synchronization operation. 
+
+All eligible memory operations are Visibility Candidates for a given Fence operation. A Fence operation makes all Visibility Candidates from each preceeding synchronization operation in the Global Synchronization Order visible to all memory operations that follow it in the global synchronization order.
 
 The `fence` instruction is analogous to the C++11 function `std::atomic_thread_fence`, called with `std::memory_order_seq_cst`.
 
@@ -695,12 +916,13 @@ Branch Instruction Encoding:
 Each branch instruction can cause the following exceptions
 
 Exceptions:
-- XA: If the branch is taken, and the destination address is not well-aligned
-- PF: If paging is enabled, and the destination address is on a non-executable page
-- PF: If paging is enabled, the destination address is on a page with supervisor execution protection, and `flags.XM=0`
-- PF: If paging is enabled, and the destination address is an out-of-range virtual address
-- PF: If paging is disabled, and the destination address is an out-of-range physical address
-- 
+- XA*: If the branch is taken, and the destination address is not well-aligned
+- PF*: If paging is enabled, and the destination address is on a non-executable page
+- PF*: If paging is enabled, the destination address is on a page with supervisor execution protection, and `flags.XM=0`
+- PF*: If paging is enabled, and the destination address is an out-of-range virtual address
+- PF*: If paging is disabled, and the destination address is an out-of-range physical address
+
+(Note: All branch exceptions are Late Execution Exceptions to support returns and indirect branches)
 
 Taking a conditional branch transfers control to destination if the condition is satisfied, and otherwise execution continues from the following instruction. 
 Immediately after the control transfer, `ip` will be equal to the desintation of the branch.
@@ -748,32 +970,61 @@ Encoding: `[0111 110r oooo hhhh]`
 h: For branch opcodes 0x8 to 0x9, `[rrrr]`. 
 For branch opcodes 0x0-0x2 and 0xB, `[00 ss]` where `ss` is the `log2(size)-1` of the immediate value used for the destination. 
 
-For branch opcode 0x5. `[iiii]` where `i` is the software interrupt number.
-For branch opcode 0xC: `[v0 ss]` where `ss` is `log2(size)-1` of the immediate value used for the destination and `v` is whether to push `flags` before `ip`.
-For all other branch opcodes, reserved and must be zero
 
-Exceptions:
-- PROT: For branch opcodes 0xB-0xD, If the `mode.XM=0`, and the value to be stored in `mode` sets `mode.XM` to be different from `mode.XMM`. 
+For all other branch opcodes, reserved and must be zero
 
 `oooo` is the branch opcode, given below.
 
-Instructions:
-- 0x0 (jmp): Unconditional normal branch.
-- 0x1 (call): Direct call, pushing the ip of the next instruction to the stack.
-- 0x2 (fcall): Direct call, storing the ip of the next instruction in r14. 
-- 0x3 (ret): pops an 8-byte value from from the stack and branches to that address.
-- 0x4 (scall): Supervisor Call (See (Supervisor Call)[#Supervisor-Call])
-- 0x5 (int): Raises the software interrupt `iiii` (See (Software Interrupts)[#Software-Interrupts])
-- 0x8 (ijmp): Indirect normal branch to the destination.
-    - 0x8 with h=0xe (fret): Fast Procedure Call Return.
-    - 0x8 with h=0xf (ifjmp): Indirect Fast Jump.
-- 0x9 (icall): Indirect call to the destination, pushing the ip of the next instruction to the stack.
-- 0xA (ifcall): Indirect fast call to the address in r15, storing the ip of the next instruction in r14. 
-- 0xB (jsm): Jump and Set flags. Reads r0 and stores the result in `mode`. 
-- 0xC (callsm): Call procedure and set mode. If v is set in `h`, then pushes `mode` before `ip`. Then loads `mode` with the value in `r0. 
-- 0xD (retrsm): Return from procedure and restore `mode`. pops an 8-byte value from the stack and returns to that address. Prior to returning, also pops `mode`. 
+Exceptions:
+- PF: If any memory operand violates paging permissions
+- UND, if the branch destination has size 16.
 
-The `jsm`, `callsm`, and `retrsm` instructions always write to the `mode` register, even if no change occurs - thus these instructions will synchronize the instruction stream with memory before executing code at the destination.
+
+Instructions (The `X` in `0x7X_` opcodes denotes either `C` or `D`):
+- 0x7X0 (jmp): Unconditional normal branch.
+- 0x7X1 (call): Direct call, pushing the ip of the next instruction to the stack.
+- 0x7X2 (fcall): Direct call, storing the ip of the next instruction in r14. 
+- 0x7C3 (ret): pops an 8-byte value from from the stack and branches to that address.
+- 0x7X8 (ijmp): Indirect normal branch to the destination.
+    - 0x7X8 with h=0xe (fret): Fast Procedure Call Return.
+    - 0x8 with h=0xf (ifjmp): Indirect Fast Jump.
+- 0x7X9 (icall): Indirect call to the destination, pushing the ip of the next instruction to the stack.
+- 0x7XA (ifcall): Indirect fast call to the address in r15, storing the ip of the next instruction in r14. 
+
+#### Forcing Control Transfers
+
+Encoding: `[0111 110r oooo hhhh]`
+
+h: For branch opcode 0x7XC: `[v0 ss]` where `ss` is `log2(size)-1` of the immediate value used for the destination and `v` is whether to push `mode` before `ip`.
+
+For branch opcode 0x7X5. `[iiii]` where `i` is the software interrupt number.
+
+
+For branch opcodes 0x7XB, `[00 ss]` where `ss` is the `log2(size)-1` of the immediate value used for the destination. 
+
+Exceptions:
+- PROT: For branch opcodes 0x7XB-0x7XD, If the `mode.XM=0`, and the value to be stored in `mode` sets `mode.XM` to be different from `mode.XMM`. 
+- PROT: For branch opcodes 0x7XB-0x7XD, if `mode.XM=1`, and the value to be stored in `mode` modifies the values of `mode[32:63]`
+- PROT: For branch opcode 0x7X5, if `mode.XM=1` and the `PX` flag in the corresponding interrupt table entry is set to `0`
+- PROT: For opcode 0x7X4, if `scdp=0`
+- PROT: For opcode 0x7X4, if `mode.XM=0`
+- UND: For branch opcodes 0x7XB-0x7XD, if any undefined by in `mode` would be set to `1`
+- Other Branch Exceptions
+
+Memory Effects:
+- Opcode 0x7XC, Store to `double [r7-8]`.
+- Opcode 0x7XC, if `v` is set in `h`, store to `double [r7-16]`.
+- Opcode 0x7XD, load from `double [r7]`
+- Opcode 0x7XD, load from `double [r7+8]`
+- Performs a forcing control transfer
+
+Instructions: 
+- 0x7C4 (scall): Supervisor Call (See (Supervisor Call)[#Supervisor-Call])
+- 0x7C5 (int): Raises the software interrupt `iiii` (See (Software Interrupts)[#Software-Interrupts])
+- 0x7XB (jsm): Jump and Set flags. Reads r0 and stores the result in `mode`. 
+- 0x7XC (callsm): Call procedure and set mode. If v is set in `h`, then pushes `mode` before `ip`. Then loads `mode` with the value in `r0. 
+- 0x7CD (retrsm): Return from procedure and restore `mode`. pops an 8-byte value from the stack and returns to that address. Prior to returning, also pops `mode`. 
+
 
 ##### Supervisor calls
 
@@ -789,10 +1040,14 @@ The sccr register is a bitfield, with the following bits:
 
 All other bits are reserved. Modifying such bits triggers UND
 
+Memory Effects:
+- Performs a forcing control transfer on the current CPU
+- If `sccr.fc=0`, store to `32 [newsp-32]` (where `newsp` is `r7` if `scsp=0`, and the value of `scsp` otherwise)
 
 Exceptions:
 - PROT: If `scdp` is `0`.
 - Other Branch Exceptions
+
 
 If `sccr.fc=1`, then a fast supervisor call is performed as follows:
 - `r7` is stored in `r12`, and, if scsp is not the value `0`, then scsp is stored in `r7`,
@@ -807,8 +1062,6 @@ Otherwise, a stack supervisor call is performed as follows:
 - `mode` is pushed to the stack, then both `mode.XM` and `mode.XMM` are cleared
 - The return address is pushed to the stack,
 - control is transfered to the absolute address in scdp.
-
-The `scall` instructions always write to the `mode` register, even if no change occurs - thus these instructions will synchronize the instruction stream with memory before executing code at the destination.
 
 
  
@@ -827,6 +1080,9 @@ Exceptions:
 - PROT, if mode.XM=1
 - Any branch exception
 
+Memory Effects:
+- Forcing Control Transfer
+- Opcodes 0xFC6 (if `sccr.fc=0`) and 0xFC7,
 
 Opcode 0xFC6 (scret) returns from a supervisor call. If sccr.fc is set, then the fast return procedure is used, as follows:
 - `ip` is loaded from `r14`,
@@ -838,10 +1094,10 @@ Opcode 0xFC6 (scret) returns from a supervisor call. If sccr.fc is set, then the
 Opcode 0xFC7 (reti) and Opcode 0xFC6 (when sccr.fc is not set) performs the following actions:
 - `ip` is popped
 - `mode` is popped
+- `flags` is popped
 - `r7` is popped
 - Control resumes at `ip`
 
-The `scret` and `reti` instructions always write to the `mode` register, even if no change occurs - thus these instructions will synchronize the instruction stream with memory before executing code at the destination.
 
 ### Machine Specific Instructions
 
@@ -855,6 +1111,9 @@ Exceptions:
 - PROT, if mode.XM=1
 - Any other Exception documented by the machine
 
+Memory Effects:
+- As prescribed by the machine
+
 Instructions 0xfe0-0xffe are reserved for machine dependent behavior and will not be assigned further meaning in future ISA versions. Refer to machine specific documentation.
 
 ### Halt
@@ -867,8 +1126,11 @@ h: Shall be 0
 Exceptions:
 - PROT, if mode.XM=1
 
+Memory Effects:
+- None
+
 Instruction:
-- ceases processor execution 
+- halts processor execution 
 
 The halt instruction may be interrupted. The saved instruction pointer is the following instruction. Interrupting this instruction resumes processor execution.
 
@@ -885,13 +1147,26 @@ Exceptions:
 - PROT, if mode.XM=1
 - UND, if any operand constraint is violated
 - PF, if any memory operand is out of bounds
-- For opcode 0x802: PF, if any control bits are set in ptbl
+- For opcode 0x802: PF*, if any control bits are set in ptbl
+- For opcode 0x805, XA, if the operand is not aligned to 2 bytes and has a size greater than 1.
+
+Memory Effects:
+- Inserts `PageFlush`, `GlobalFlush`, `DataFlush`, or `ExecFlush` respectively to the Global Synchronization Order
 
 Instructions:
-- 0x802 (pcfl): Causes all page caches to be flushed. This also causes ptbl to be checked (even if cr0.PG!=0). 
-- 0x803 (flall): Flushes data, instruction, and page caches on the current CPU.
-- 0x804 (dflush): Flushes the Data Cache for the given address. 
-- 0x805 (iflush): Flushes the instruction cache for the given address.
+- 0x802 (pcfl): Causes all page caches to be flushed. This also causes ptbl to be checked (even if cr0.PG!=0). Performs the `PageFlush` synchronization operation.
+- 0x803 (flall): Flushes data, instruction, and page caches on the current CPU. Performs the `GlobalFlush` synchronization operation
+- 0x804 (dflush): Flushes the Data Cache for the given address. Performs the `DataFlush` synchronization operation on all bytes refered to by the operand
+- 0x805 (iflush): Flushes the instruction cache for the given address.  Performs the `ExecFlush` synchronization operation on all bytes refered to by the operand. If the memory operand is larger than size 1, it must be aligned to at least 2 bytes.
+
+All eligible memory operations are Visibility Candidates of a `GlobalFlush` operation. All Visibility Candidates of all preceeding synchronization operations in the global synchronization order are made visible to memory operations executed after it on the same CPU, and each of those memory operations and the Visibility Candidates of the `GlobalFlush` operation are additionally made Execution Visible to subsequent instruction fetches on the same CPU. This operation is strictly stronger than the `fence` instruction.
+
+All eligible memory operations that access any byte refered to by the operand are Visibility Candidates of a `DataFlush` instruction. All Visibility Candidates of all preceeding synchronization operations in the global synchronization order that access any of those bytes are made visibile to memory operations after it on the same CPU.
+
+For an `ExecFlush` synchronization operation, all eligible memory operations, and all Visibility Candidates of synchronization operations that preceed it in the global synchronization order that access any of the bytes refered to by the operand are made Execution Visible to any subsequent instruction fetch that reads any of those bytes.
+
+The `PageFlush` synchronization operation does not make any Visibility Candidates visible to any subsequent memory operation, and does not have any Visibility Candidates. It still participates in the global synchronization order.
+
 
 ### I/O Transfers
 
@@ -906,16 +1181,30 @@ Exceptions:
 
 Flags: 0x806 Sets Z, M, and P based on the value read
 
+Memory Effects:
+- Inserts `IO` to the Global Synchronization Order.
+
 Instructions:
-- 0x806 (in): Reads `ss` bytes from the I/O Device at the address given in `r2` into `r0`.
-- 0x807 (out): Writes `ss` bytes from `r0` to the I/O Device at the address given in `r2`.
+- 0x806 (in): Reads `ss` bytes from the I/O Device at the address given in `r2` into `r0`. Performs the `IO` synchronization operation.
+- 0x807 (out): Writes `ss` bytes from `r0` to the I/O Device at the address given in `r2`. Performs the `IO` synchronization operation.
 
-Both opcodes 0x806 and 0x807 may be modified by opcodes 0x028 and 0x029 (repc and repi). If so, the operation is performed until the condition is satisifed, and the value is read from `[r4]` (`out`) or written to `[r5]` (`in`) (`ss` is added to the corresponding register after the assignment) instead of `r0`.
-
-I/O Device Addresses are 64-bit values, which correspond to some identifier assigned to devices. The I/O Device Addresses from 0x00000000-0xffffffff are reserved for use with this specification, future versions, and extensions thereof.
+I/O Device Addresses are 64-bit values, which correspond to some identifier assigned to devices. The I/O Device Addresses from 0x00000000-0xffffffff are reserved for use with this specification, future versions, extensions, and technical documents thereof.
 All other device addresses have machine specific use.
 
 If a device is not available on the machine, then reading it shall yield `0` and writing to it shall have no effect.
+
+#### Memory Effects of an I/O Transfer
+
+An I/O Device accessed by an `in` or `out` instruction, may access memory. The full memory effects of such operations are documented here.
+
+By Default, The `IO` synchronization operation does not make any Visibility Candidates visible to any subsequent memory operation, and does not have any Visibility Candidates. It still participates in the global synchronization order.
+
+An out instruction `O` that reads from or writes to memory as part of its I/O operation will observe all eligible memory operations, and all visibility candidates of synchronization operations that preceed `O` in the global synchronization order, according to the memory model. If the operation accesses a byte B, such that B is modified by a memory operation that occurs later in the store list of byte B than the last store to byte B which is an eligible memory operation `O`, it is unspecified whether the I/O operation will observe `O`. 
+
+An out instruction `O` that reads from or writes to memory may "Start a DMA Transfer" with respect to certain memory locations. A subsequent out instruction or in instruction `R` may then "Report on the DMA Transfer Started by O". R includes, as its set of visibility candidates, the memory accesses performed by the DMA Transfer started by O. 
+
+_Note: `R` alone does not make those candidates visible, and a `fence` instruction or a cache flush instruction is needed to make the result of the DMA Transfer Visible._
+
 
 ### Mass Register Storage
 
@@ -932,9 +1221,14 @@ Exceptions:
 - For opcode 0x809, PROT, if any reserved register is restored with a value other than `0`. 
 - PROT, if mode.XM=1
 
+Memory Effects:
+- Opcode 0x808, 16 stores to `128 [#1 + 128*N]` where `N∈[0,16)`. The stores occur in an unspecified order.
+- Opcode 0x809, 16 loads from `128 [#1 + 128*N]` where `N∈[0,16)`. The loads occur in an unspecified order.
+
 Instructions:
 - 0x808 (storegf): Stores the value of each register to the memory address specified by the operand. The value of `ip` stored is the address immediately following this instruction
 - 0x809 (rstregf): Restores the value of each non-reserved, non-cpuinfo register from the memory address specified by the operand
+
 
 ## Multiple CPUs
 
@@ -1172,7 +1466,7 @@ If the pfchar register is not aligned to 16 bytes, or a page fault occurs writin
 Accessing physical memory may exceed limits on storage available to the system. If so, the system reports a page fault with an access_kind of non-present memory. 
 
 There are two cases the under which the system may report non-present memory:
-* The access reached physical memory that is not attached to any memory available to the system (For example, it exceeds the size of physical memory installed or addressible),
+* The access reached a page physical memory that is not attached to any memory available to the system (For example, it exceeds the size of physical memory installed or addressible),
 * The access reached a page dedicated for Memory Mapped I/O and the particular access does not reach a device attached to the system. 
 
 The former case may also be used by emulators, to indicate that attempts to allocate memory for use by the emulated system failed. 
